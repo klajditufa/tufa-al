@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUFA Finance – Paneli</title>
+
+  <!-- Tailwind CSS (Play CDN – vetëm për zhvillim; në prodhim përdorni Tailwind CLI/PostCSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js – grafiku i ecurisë mujore -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @layer components {
+      .nav-link   { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-blue-100 transition hover:bg-blue-700 hover:text-white; }
+      .nav-active { @apply bg-blue-700 text-white; }
+      .card       { @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm; }
+      .badge      { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset; }
+      .icon       { @apply h-5 w-5 shrink-0; }
+      .quick-link { @apply flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen">
+
+  <!-- ============================================================
+       MENYJA ANËSORE (SIDEBAR)
+       Në ekrane të vegjël fshihet dhe hapet me butonin ☰ në header.
+       ============================================================ -->
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-blue-800 text-blue-100 transition-transform duration-200 md:static md:translate-x-0">
+
+    <!-- Logo -->
+    <div class="flex h-16 items-center gap-3 border-b border-blue-700 px-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-extrabold text-blue-800">TF</div>
+      <div class="leading-tight">
+        <p class="text-base font-bold text-white">TUFA Finance</p>
+        <p class="text-[11px] text-blue-300">Kontabiliteti juaj online</p>
+      </div>
+    </div>
+
+    <!-- Lidhjet kryesore -->
+    <nav class="flex-1 space-y-1 px-3 py-4 text-sm">
+      <a href="dashboard.html" class="nav-link nav-active">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+        Paneli
+      </a>
+      <a href="fatura-e-re.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Të Ardhurat
+      </a>
+      <a href="ngarko-dokumente.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        Shpenzimet
+      </a>
+      <a href="#deklarimet" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+        Deklarimet
+      </a>
+      <a href="ngarko-dokumente.html#arkiva" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        Dokumentet
+      </a>
+    </nav>
+
+    <!-- Lidhjet dytësore -->
+    <div class="space-y-1 border-t border-blue-700 px-3 py-4 text-sm">
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Parametrat
+      </a>
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        Ndihmë / Llogaritari im
+      </a>
+    </div>
+  </aside>
+
+  <!-- Sfondi i errët kur menyja është e hapur në mobile -->
+  <div id="backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/50 md:hidden"></div>
+
+  <!-- ============================================================
+       PËRMBAJTJA KRYESORE
+       ============================================================ -->
+  <div class="flex min-w-0 flex-1 flex-col">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
+      <div class="flex items-center gap-3">
+        <button id="menuBtn" type="button" class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden" aria-label="Hap menynë">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+        <div>
+          <h1 class="text-lg font-semibold text-slate-900">Paneli</h1>
+          <p id="todayLabel" class="text-xs text-slate-500"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 md:gap-4">
+        <button type="button" class="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Njoftimet">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+          <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+        </button>
+        <div class="flex items-center gap-3 border-l border-slate-200 pl-3 md:pl-4">
+          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800" data-bind="initials">DS</div>
+          <div class="hidden leading-tight sm:block">
+            <p class="text-sm font-medium text-slate-800" data-bind="businessName">Demo SHPK</p>
+            <p class="text-xs text-slate-500" data-bind="nipt">L21234567A</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 space-y-6 p-4 md:p-8">
+
+      <!-- Përshëndetja -->
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900">Mirësevjen, <span data-bind="businessName">[Emri i Kompanisë]</span>!</h2>
+        <p class="mt-1 text-slate-500">Ja situata juaj këtë muaj:</p>
+      </div>
+
+      <!-- Njoftimi i afatit -->
+      <div class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+        <p class="text-sm"><span class="font-semibold">Kujdes:</span> <span data-bind="alertText">Afati për deklarimin e Listëpagesave përfundon pas 4 ditësh!</span></p>
+        <a href="#deklarimet" class="ml-auto shrink-0 text-sm font-semibold text-amber-800 hover:underline">Shiko →</a>
+      </div>
+
+      <!-- 3 KARTAT PËRMBLEDHËSE -->
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+
+        <!-- Karta 1: Të Ardhurat Mujore -->
+        <div class="card">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-slate-500">Të Ardhurat Mujore</p>
+            <span class="rounded-lg bg-blue-50 p-2 text-blue-600">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>
+            </span>
+          </div>
+          <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900" data-bind="incomeMonth">0.00 LEK</p>
+          <p class="mt-2 text-xs text-slate-500"><span data-bind="incomeDelta" class="font-semibold text-green-600">+0.0%</span> krahasuar me muajin e kaluar</p>
+        </div>
+
+        <!-- Karta 2: Shpenzimet Mujore -->
+        <div class="card">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-slate-500">Shpenzimet Mujore</p>
+            <span class="rounded-lg bg-slate-100 p-2 text-slate-600">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181"/></svg>
+            </span>
+          </div>
+          <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900" data-bind="expensesMonth">0.00 LEK</p>
+          <p class="mt-2 text-xs text-slate-500"><span data-bind="expensesDelta" class="font-semibold text-green-600">-0.0%</span> krahasuar me muajin e kaluar</p>
+        </div>
+
+        <!-- Karta 3: Detyrime të Papaguara -->
+        <div class="card border-amber-200">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-slate-500">Detyrime të Papaguara</p>
+            <span class="rounded-lg bg-amber-50 p-2 text-amber-600">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
+          </div>
+          <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900" data-bind="unpaidMonth">0.00 LEK</p>
+          <p class="mt-2 text-xs text-slate-500" data-bind="unpaidInfo">Nuk ka detyrime të papaguara</p>
+        </div>
+      </section>
+
+      <!-- GRAFIKU + VEPRIME TË SHPEJTA -->
+      <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        <!-- Grafiku i ecurisë mujore (Chart.js) -->
+        <div class="card lg:col-span-2">
+          <div class="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <h3 class="font-semibold text-slate-900">Ecuria Mujore</h3>
+              <p class="text-xs text-slate-500">Të ardhurat dhe shpenzimet pa TVSH, në LEK</p>
+            </div>
+            <span class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600" data-bind="year">2026</span>
+          </div>
+          <div class="relative h-72 md:h-80">
+            <canvas id="monthlyChart" aria-label="Grafiku i të ardhurave dhe shpenzimeve mujore" role="img"></canvas>
+          </div>
+        </div>
+
+        <!-- Veprime të shpejta + përmbledhja vjetore -->
+        <div class="card">
+          <h3 class="font-semibold text-slate-900">Veprime të shpejta</h3>
+          <div class="mt-4 space-y-2">
+            <a href="fatura-e-re.html" class="quick-link">
+              <svg class="icon text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Krijo faturë të re
+            </a>
+            <a href="ngarko-dokumente.html" class="quick-link">
+              <svg class="icon text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+              Ngarko shpenzim (foto/PDF)
+            </a>
+            <a href="ngarko-dokumente.html#arkiva" class="quick-link">
+              <svg class="icon text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+              Ngarko dokument në arkivë
+            </a>
+          </div>
+
+          <div class="mt-6 border-t border-slate-200 pt-4">
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Përmbledhja e vitit <span data-bind="year">2026</span></h4>
+            <dl class="mt-3 space-y-2 text-sm">
+              <div class="flex justify-between"><dt class="text-slate-500">Të ardhura</dt><dd class="font-semibold text-slate-800" data-bind="incomeYear">0.00 LEK</dd></div>
+              <div class="flex justify-between"><dt class="text-slate-500">Shpenzime</dt><dd class="font-semibold text-slate-800" data-bind="expensesYear">0.00 LEK</dd></div>
+              <div class="flex justify-between border-t border-slate-200 pt-2"><dt class="font-medium text-slate-700">Fitimi bruto</dt><dd class="font-bold text-blue-700" data-bind="profitYear">0.00 LEK</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- DEKLARIMET TATIMORE -->
+      <section id="deklarimet" class="card overflow-hidden p-0">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div>
+            <h3 class="font-semibold text-slate-900">Deklarimet Tatimore</h3>
+            <p class="text-xs text-slate-500">Statusi i deklarimeve të fundit, i përditësuar nga llogaritari juaj</p>
+          </div>
+          <a href="#" class="text-sm font-semibold text-blue-700 hover:underline">Shiko të gjitha →</a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-6 py-3 font-semibold">Deklarata</th>
+                <th class="px-6 py-3 font-semibold">Periudha</th>
+                <th class="px-6 py-3 font-semibold">Afati</th>
+                <th class="px-6 py-3 font-semibold">Detyrimi</th>
+                <th class="px-6 py-3 font-semibold">Statusi</th>
+              </tr>
+            </thead>
+            <tbody id="declarationsBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Legjenda e statuseve (sipas specifikimit) -->
+        <div class="flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
+          <span><span class="font-semibold text-green-700">E Deklaruar</span> — muaji është mbyllur me sukses nga llogaritari</span>
+          <span><span class="font-semibold text-blue-700">Në Proces</span> — dokumentet po përpunohen dhe auditohen</span>
+          <span><span class="font-semibold text-amber-700">Pezull</span> — kërkohen dokumente ose sqarime shtesë nga ju</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  /* =====================================================================
+     1. TË DHËNAT E PANELIT (mock)
+     Vlerat më poshtë janë statike, vetëm për demonstrim. Në prodhim ato
+     vijnë nga API-ja (p.sh. GET /api/dashboard?year=2026), e cila mund të
+     lexojë pamjet v_monthly_summary dhe v_unpaid_obligations nga databaza
+     (shih db/001-schema.sql). Çelësat e statusit janë të njëjtët si në tabelën
+     tax_declarations: declared | in_process | pending_client.
+     ===================================================================== */
+  const dashboardData = {
+    businessName : 'Demo SHPK',
+    nipt         : 'L21234567A',
+    year         : 2026,
+    alertText    : 'Afati për deklarimin e Listëpagesave përfundon pas 4 ditësh!',
+    currentMonth : {
+      income   : 1250000, incomeDelta  : 12.4,   // % ndaj muajit të kaluar
+      expenses : 842500,  expensesDelta: -3.1,
+      unpaidObligations: 86400, unpaidCount: 2, nextDeadline: '20 Tet 2026'
+    },
+    monthly : {
+      labels  : ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gush', 'Sht', 'Tet', 'Nën', 'Dhj'],
+      income  : [910000, 980000, 1120000, 1045000, 1180000, 1260000, 1390000, 1210000, 1150000, 1250000, null, null],
+      expenses: [640000, 720000,  805000,  760000,  830000,  890000,  960000,  870000,  815000,  842500, null, null]
+    },
+    declarations : [
+      { name: 'TVSH',                      period: 'Shtator 2026',       due: '14 Tet 2026', amount: 54200, status: 'declared' },
+      { name: 'Listëpagesa (Sigurime)',    period: 'Shtator 2026',       due: '20 Tet 2026', amount: 32200, status: 'in_process' },
+      { name: 'Tatim Fitimi (paradhënie)', period: 'Tremujori IV 2026',  due: '30 Dhj 2026', amount: null,  status: 'pending_client', note: 'Kërkohet fatura e qirasë për tetorin' },
+      { name: 'TVSH',                      period: 'Gusht 2026',         due: '14 Sht 2026', amount: 48750, status: 'declared' }
+    ]
+  };
+
+  /* =====================================================================
+     2. NDIHMËS
+     ===================================================================== */
+  // Formatim i shumave: 1,250,000.00 LEK
+  const fmtLek = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' LEK';
+
+  // Vendos një vlerë në të gjithë elementët me data-bind="çelësi"
+  const bind = (key, value) =>
+    document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => { el.textContent = value; });
+
+  // Etiketat e statuseve (përputhen me kolonën tax_declarations.status)
+  const STATUS = {
+    declared      : { label: 'E Deklaruar', cls: 'bg-green-50 text-green-700 ring-green-600/20', dot: 'bg-green-500' },
+    in_process    : { label: 'Në Proces',   cls: 'bg-blue-50 text-blue-700 ring-blue-600/20',    dot: 'bg-blue-500'  },
+    pending_client: { label: 'Pezull',      cls: 'bg-amber-50 text-amber-700 ring-amber-600/20', dot: 'bg-amber-500' }
+  };
+
+  /* =====================================================================
+     3. KARTAT PËRMBLEDHËSE
+     ===================================================================== */
+  function renderCards(d) {
+    const m = d.currentMonth;
+    bind('businessName', d.businessName);
+    bind('nipt', d.nipt);
+    bind('year', d.year);
+    bind('initials', d.businessName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase());
+    bind('alertText', d.alertText);
+
+    bind('incomeMonth',   fmtLek(m.income));
+    bind('expensesMonth', fmtLek(m.expenses));
+    bind('unpaidMonth',   fmtLek(m.unpaidObligations));
+    bind('unpaidInfo',    m.unpaidCount
+      ? `${m.unpaidCount} detyrime · afati më i afërt: ${m.nextDeadline}`
+      : 'Nuk ka detyrime të papaguara');
+
+    setDelta('incomeDelta',   m.incomeDelta,   true);   // rritja e të ardhurave = mirë
+    setDelta('expensesDelta', m.expensesDelta, false);  // rritja e shpenzimeve = jo mirë
+
+    const sum = arr => arr.reduce((a, b) => a + (b || 0), 0);
+    const incomeYear = sum(d.monthly.income), expensesYear = sum(d.monthly.expenses);
+    bind('incomeYear',   fmtLek(incomeYear));
+    bind('expensesYear', fmtLek(expensesYear));
+    bind('profitYear',   fmtLek(incomeYear - expensesYear));
+  }
+
+  function setDelta(key, pct, positiveIsGood) {
+    document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => {
+      const good = positiveIsGood ? pct >= 0 : pct <= 0;
+      el.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+      el.className = 'font-semibold ' + (good ? 'text-green-600' : 'text-red-600');
+    });
+  }
+
+  /* =====================================================================
+     4. GRAFIKU I ECURISË MUJORE (Chart.js)
+     Shtyllat: të ardhurat (blu) dhe shpenzimet (gri). Vija: fitimi.
+     ===================================================================== */
+  function renderChart(d) {
+    const canvas = document.getElementById('monthlyChart');
+    if (!window.Chart) {   // nëse Chart.js nuk u ngarkua (p.sh. pa internet)
+      canvas.parentElement.innerHTML = '<p class="flex h-full items-center justify-center text-sm text-slate-400">Grafiku nuk mund të ngarkohet.</p>';
+      return;
+    }
+    const profit = d.monthly.income.map((v, i) => v == null ? null : v - (d.monthly.expenses[i] || 0));
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: d.monthly.labels,
+        datasets: [
+          { label: 'Të Ardhurat', data: d.monthly.income,   backgroundColor: '#2563eb', hoverBackgroundColor: '#1d4ed8', borderRadius: 6, maxBarThickness: 28 },
+          { label: 'Shpenzimet',  data: d.monthly.expenses, backgroundColor: '#cbd5e1', hoverBackgroundColor: '#94a3b8', borderRadius: 6, maxBarThickness: 28 },
+          { type: 'line', label: 'Fitimi', data: profit, borderColor: '#1e3a8a', backgroundColor: '#1e3a8a',
+            borderWidth: 2, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, spanGaps: false }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtLek(c.parsed.y)}` } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#e2e8f0' },
+            ticks: { callback: v => (v / 1000).toLocaleString('en-US') + ' mijë' }
+          }
+        }
+      }
+    });
+  }
+
+  /* =====================================================================
+     5. TABELA E DEKLARIMEVE TATIMORE
+     ===================================================================== */
+  function renderDeclarations(rows) {
+    const body = document.getElementById('declarationsBody');
+    body.innerHTML = rows.map(r => {
+      const s = STATUS[r.status] || STATUS.in_process;
+      return `
+        <tr class="hover:bg-slate-50">
+          <td class="px-6 py-3.5 font-medium text-slate-800">
+            ${r.name}
+            ${r.note ? `<p class="mt-0.5 text-xs font-normal text-amber-700">${r.note}</p>` : ''}
+          </td>
+          <td class="px-6 py-3.5 text-slate-600">${r.period}</td>
+          <td class="px-6 py-3.5 text-slate-600">${r.due}</td>
+          <td class="px-6 py-3.5 text-slate-800">${r.amount != null ? fmtLek(r.amount) : '—'}</td>
+          <td class="px-6 py-3.5">
+            <span class="badge ${s.cls}"><span class="h-1.5 w-1.5 rounded-full ${s.dot}"></span>${s.label}</span>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* =====================================================================
+     6. MENYJA NË MOBILE + DATA E SOTME
+     ===================================================================== */
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('backdrop');
+  const toggleMenu = () => {
+    sidebar.classList.toggle('-translate-x-full');
+    backdrop.classList.toggle('hidden');
+  };
+  document.getElementById('menuBtn').addEventListener('click', toggleMenu);
+  backdrop.addEventListener('click', toggleMenu);
+
+  const today = new Date().toLocaleDateString('sq-AL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('todayLabel').textContent = today.charAt(0).toUpperCase() + today.slice(1);
+
+  /* =====================================================================
+     7. NISJA
+     ===================================================================== */
+  renderCards(dashboardData);
+  renderChart(dashboardData);
+  renderDeclarations(dashboardData.declarations);
+</script>
+</body>
+</html>

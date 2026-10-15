@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUFA Finance – Ngarko Shpenzim / Dokument</title>
+
+  <!-- Tailwind CSS (Play CDN – vetëm për zhvillim; në prodhim përdorni Tailwind CLI/PostCSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style type="text/tailwindcss">
+    @layer components {
+      /* Shell-i i aplikacionit (i njëjtë si në dashboard.html) */
+      .nav-link      { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-blue-100 transition hover:bg-blue-700 hover:text-white; }
+      .nav-active    { @apply bg-blue-700 text-white; }
+      .card          { @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm; }
+      .icon          { @apply h-5 w-5 shrink-0; }
+      /* Elementët e formës */
+      .label         { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+      .input         { @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20; }
+      .input-error   { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+      .btn-primary   { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40; }
+      .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50; }
+    }
+  </style>
+
+  <!-- ================================================================
+       CSS i komponentit të ngarkimit (tf-uploader)
+       ================================================================ -->
+  <style>
+    .tf-dropzone {
+      border: 2px dashed #cbd5e1;          /* slate-300 */
+      border-radius: 1rem;
+      background: #f8fafc;                 /* slate-50 */
+      cursor: pointer;
+      transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
+    }
+    .tf-dropzone:hover,
+    .tf-dropzone:focus-visible {
+      border-color: #60a5fa;               /* blue-400 */
+      background: #eff6ff;                 /* blue-50 */
+      outline: none;
+    }
+    /* Gjendja kur skedari po tërhiqet mbi zonë */
+    .tf-dropzone.is-dragover {
+      border-color: #2563eb;               /* blue-600 */
+      background: #dbeafe;                 /* blue-100 */
+      transform: scale(1.01);
+    }
+    .tf-thumb {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border-radius: .5rem; object-fit: cover; background: #f1f5f9;
+    }
+    .tf-thumb-pdf {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #b91c1c; background: #fee2e2;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen">
+
+  <!-- ============================================================
+       MENYJA ANËSORE (SIDEBAR)
+       ============================================================ -->
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-blue-800 text-blue-100 transition-transform duration-200 md:static md:translate-x-0">
+    <div class="flex h-16 items-center gap-3 border-b border-blue-700 px-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-extrabold text-blue-800">TF</div>
+      <div class="leading-tight">
+        <p class="text-base font-bold text-white">TUFA Finance</p>
+        <p class="text-[11px] text-blue-300">Kontabiliteti juaj online</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1 px-3 py-4 text-sm">
+      <a href="dashboard.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+        Paneli
+      </a>
+      <a href="fatura-e-re.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Të Ardhurat
+      </a>
+      <a href="ngarko-dokumente.html" class="nav-link nav-active">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        Shpenzimet
+      </a>
+      <a href="dashboard.html#deklarimet" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+        Deklarimet
+      </a>
+      <a href="#arkiva" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        Dokumentet
+      </a>
+    </nav>
+
+    <div class="space-y-1 border-t border-blue-700 px-3 py-4 text-sm">
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Parametrat
+      </a>
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        Ndihmë / Llogaritari im
+      </a>
+    </div>
+  </aside>
+  <div id="backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/50 md:hidden"></div>
+
+  <!-- ============================================================
+       PËRMBAJTJA
+       ============================================================ -->
+  <div class="flex min-w-0 flex-1 flex-col">
+
+    <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
+      <div class="flex items-center gap-3">
+        <button id="menuBtn" type="button" class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden" aria-label="Hap menynë">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+        <div>
+          <h1 class="text-lg font-semibold text-slate-900">Shpenzimet &amp; Dokumentet</h1>
+          <p class="text-xs text-slate-500">Ngarkoni faturat e blerjes dhe dokumentet e biznesit</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800">DS</div>
+        <div class="hidden leading-tight sm:block">
+          <p class="text-sm font-medium text-slate-800">Demo SHPK</p>
+          <p class="text-xs text-slate-500">L21234567A</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 space-y-8 p-4 md:p-8">
+      <div class="mx-auto max-w-3xl space-y-8">
+
+        <!-- ================================================================
+             A. NGARKO NJË SHPENZIM TË RI
+             ================================================================ -->
+        <section id="shpenzimet" class="card">
+          <h2 class="text-xl font-bold text-slate-900">Ngarko një Shpenzim të Ri</h2>
+          <p class="mt-1 text-sm text-slate-500">Bashkëngjit një foto ose skedar PDF të faturës/kuponit të biznesit.</p>
+
+          <form id="formShpenzim" class="mt-6 space-y-6" novalidate>
+
+            <!-- ===== KOMPONENTI I NGARKIMIT (Drag & Drop) – instanca 1 ===== -->
+            <div class="tf-uploader" id="uploaderShpenzim">
+              <input type="file" class="hidden" accept="image/jpeg,image/png,application/pdf" multiple>
+              <div class="tf-dropzone flex flex-col items-center justify-center px-6 py-10 text-center"
+                   tabindex="0" role="button" aria-label="Zgjidh ose tërhiq skedarët këtu">
+                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
+                </div>
+                <p class="text-sm text-slate-700">
+                  <span class="font-semibold text-blue-700">⇧ Zgjidh Skedarin (Upload)</span> ose tërhiqeni dhe lëshojeni këtu
+                </p>
+                <p class="mt-1 text-xs text-slate-500">Foto (JPG, PNG) ose PDF · maks. 10 MB për skedar</p>
+              </div>
+              <p class="tf-error mt-2 hidden text-sm text-red-600"></p>
+              <p class="tf-status mt-3 text-xs font-medium text-slate-500">Asnjë skedar i zgjedhur</p>
+              <ul class="tf-file-list mt-2 space-y-2"></ul>
+            </div>
+            <!-- ===== fundi i komponentit ===== -->
+
+            <!-- Fushat që plotësohen (sipas specifikimit) -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="dataFatures" class="label">Data e faturës <span class="text-red-500">*</span></label>
+                <input id="dataFatures" name="expense_date" type="date" class="input" required>
+              </div>
+              <div>
+                <label for="vleraTotale" class="label">Vlera totale <span class="text-red-500">*</span></label>
+                <div class="flex">
+                  <input id="vleraTotale" name="amount_total" type="number" min="0" step="0.01" inputmode="decimal"
+                         class="input rounded-r-none text-right font-semibold" placeholder="0.00" required>
+                  <select id="monedha" name="currency" class="input w-28 rounded-l-none border-l-0 font-medium" aria-label="Monedha">
+                    <option value="ALL" selected>LEK</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label for="kategoria" class="label">Kategoria <span class="text-red-500">*</span></label>
+                <!-- Në prodhim opsionet vijnë nga tabela expense_categories (value = id) -->
+                <select id="kategoria" name="category" class="input" required>
+                  <option value="">— Zgjidh kategorinë —</option>
+                  <option value="Karburant">Karburant</option>
+                  <option value="Qira">Qira</option>
+                  <option value="Blerje Materialesh">Blerje Materialesh</option>
+                  <option value="Konsulencë">Konsulencë</option>
+                  <option value="Paga dhe Sigurime">Paga dhe Sigurime</option>
+                  <option value="Energji, Ujë, Internet">Energji, Ujë, Internet</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Tjetër">Tjetër</option>
+                </select>
+              </div>
+              <div>
+                <label for="shenime" class="label">Shënime <span class="text-slate-400">(opsionale)</span></label>
+                <input id="shenime" name="notes" type="text" class="input" placeholder="p.sh. Furnitori, nr. i faturës">
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-4">
+              <button type="reset" class="btn-secondary">Pastro</button>
+              <button type="submit" class="btn-primary">Ruaj Shpenzimin</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ================================================================
+             B. ARKIVA – NGARKO DOKUMENT
+             ================================================================ -->
+        <section id="arkiva" class="card">
+          <h2 class="text-xl font-bold text-slate-900">Arkiva – Ngarko Dokument</h2>
+          <p class="mt-1 text-sm text-slate-500">NIPT-i, ekstrakti i QKB-së, kontratat dhe pasqyrat financiare — të ruajtura në mënyrë të sigurt dhe të aksesueshme me një klik.</p>
+
+          <form id="formDokument" class="mt-6 space-y-6" novalidate>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="llojiDok" class="label">Lloji i dokumentit <span class="text-red-500">*</span></label>
+                <!-- value = documents.doc_type në db/001-schema.sql -->
+                <select id="llojiDok" name="doc_type" class="input" required>
+                  <option value="">— Zgjidh llojin —</option>
+                  <option value="nipt">Certifikata e NIPT-it</option>
+                  <option value="qkb">Ekstrakt QKB</option>
+                  <option value="contract">Kontratë</option>
+                  <option value="financial_statement">Pasqyra Financiare</option>
+                  <option value="tax_declaration">Deklaratë tatimore</option>
+                  <option value="other">Tjetër</option>
+                </select>
+              </div>
+              <div>
+                <label for="titulliDok" class="label">Titulli <span class="text-red-500">*</span></label>
+                <input id="titulliDok" name="title" type="text" class="input" placeholder="p.sh. Kontrata e qirasë 2026" required>
+              </div>
+            </div>
+
+            <!-- ===== KOMPONENTI I NGARKIMIT (Drag & Drop) – instanca 2 ===== -->
+            <div class="tf-uploader" id="uploaderDokument">
+              <input type="file" class="hidden" accept="image/jpeg,image/png,application/pdf" multiple>
+              <div class="tf-dropzone flex flex-col items-center justify-center px-6 py-8 text-center"
+                   tabindex="0" role="button" aria-label="Zgjidh ose tërhiq dokumentet këtu">
+                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
+                </div>
+                <p class="text-sm text-slate-700">
+                  <span class="font-semibold text-blue-700">⇧ Zgjidh Skedarin (Upload)</span> ose tërhiqeni dhe lëshojeni këtu
+                </p>
+                <p class="mt-1 text-xs text-slate-500">JPG, PNG ose PDF · maks. 10 MB për skedar</p>
+              </div>
+              <p class="tf-error mt-2 hidden text-sm text-red-600"></p>
+              <p class="tf-status mt-3 text-xs font-medium text-slate-500">Asnjë skedar i zgjedhur</p>
+              <ul class="tf-file-list mt-2 space-y-2"></ul>
+            </div>
+            <!-- ===== fundi i komponentit ===== -->
+
+            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-4">
+              <button type="reset" class="btn-secondary">Pastro</button>
+              <button type="submit" class="btn-primary">Ngarko në Arkivë</button>
+            </div>
+          </form>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Njoftim i shkurtër (toast) -->
+<div id="toast" role="status" aria-live="polite"
+     class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 translate-y-4 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white opacity-0 shadow-lg transition"></div>
+
+<script>
+  /* =====================================================================
+     KOMPONENTI "TF UPLOADER" – Drag & Drop + zgjedhje manuale e skedarëve
+     ---------------------------------------------------------------------
+     Struktura HTML e pritur brenda .tf-uploader:
+       <input type="file" class="hidden">   zgjedhja manuale
+       .tf-dropzone                          zona ku klikohet / lëshohet skedari
+       .tf-error                             mesazhet e gabimit
+       .tf-status                            "1 skedar i zgjedhur: fatura.pdf"
+       .tf-file-list                         lista e skedarëve të zgjedhur
+
+     Përdorimi:
+       const up = initUploader(document.getElementById('uploaderShpenzim'), {
+         multiple : true,                                   // lejo disa skedarë
+         maxSizeMB: 10,                                     // madhësia maksimale për skedar
+         accept   : ['image/jpeg', 'image/png', 'application/pdf'],
+         onChange : files => console.log(files)             // thirret sa herë ndryshon lista
+       });
+       up.getFiles()  -> Array<File>      up.clear()  -> pastron listën
+     ===================================================================== */
+  function initUploader(rootEl, options = {}) {
+    const opts = Object.assign({
+      multiple : true,
+      maxSizeMB: 10,
+      accept   : ['image/jpeg', 'image/png', 'application/pdf'],
+      onChange : null
+    }, options);
+
+    const input    = rootEl.querySelector('input[type="file"]');
+    const dropzone = rootEl.querySelector('.tf-dropzone');
+    const list     = rootEl.querySelector('.tf-file-list');
+    const errorBox = rootEl.querySelector('.tf-error');
+    const status   = rootEl.querySelector('.tf-status');
+    const EXT_OK   = ['jpg', 'jpeg', 'png', 'pdf'];
+    let files = [];
+
+    input.multiple = opts.multiple;
+    input.accept   = opts.accept.join(',');
+
+    /* --- Zgjedhja manuale: klik ose tastierë (Enter / Space) --- */
+    dropzone.addEventListener('click', () => input.click());
+    dropzone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    // Sapo përdoruesi zgjedh skedarin, ai shfaqet në listë me emrin e tij
+    input.addEventListener('change', () => { addFiles(input.files); input.value = ''; });
+
+    /* --- Drag & Drop --- */
+    ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add('is-dragover');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.remove('is-dragover');
+    }));
+    dropzone.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+    /* --- Shtimi dhe validimi i skedarëve --- */
+    function addFiles(fileList) {
+      const errors = [];
+      Array.from(fileList).forEach(file => {
+        const ext    = file.name.split('.').pop().toLowerCase();
+        const typeOk = opts.accept.includes(file.type) || EXT_OK.includes(ext);
+        const sizeOk = file.size <= opts.maxSizeMB * 1024 * 1024;
+        const isDup  = files.some(f => f.name === file.name && f.size === file.size);
+
+        if (!typeOk) { errors.push(`"${file.name}": formati nuk lejohet (vetëm JPG, PNG ose PDF).`); return; }
+        if (!sizeOk) { errors.push(`"${file.name}": skedari është shumë i madh (maks. ${opts.maxSizeMB} MB).`); return; }
+        if (isDup)   { return; }                         // i njëjti skedar është shtuar tashmë
+        if (!opts.multiple) files = [];
+        files.push(file);
+      });
+      showErrors(errors);
+      render();
+    }
+
+    function showErrors(errors) {
+      errorBox.innerHTML = errors.map(escapeHtml).join('<br>');
+      errorBox.classList.toggle('hidden', errors.length === 0);
+    }
+
+    /* --- Paraqitja e listës: emri, madhësia, pamje e vogël, buton "Hiq" --- */
+    function render() {
+      list.innerHTML = files.map((file, i) => {
+        const isImage = file.type.startsWith('image/');
+        const thumb = isImage
+          ? `<img class="tf-thumb" src="${URL.createObjectURL(file)}" alt="" onload="URL.revokeObjectURL(this.src)">`
+          : `<div class="tf-thumb tf-thumb-pdf">PDF</div>`;
+        return `
+          <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+            ${thumb}
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-slate-800" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</p>
+              <p class="text-xs text-slate-500">${formatSize(file.size)} · ${isImage ? 'Foto' : 'Dokument PDF'}</p>
+            </div>
+            <button type="button" class="tf-remove rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                    data-index="${i}" aria-label="Hiq skedarin">
+              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </li>`;
+      }).join('');
+
+      status.textContent =
+        files.length === 0 ? 'Asnjë skedar i zgjedhur' :
+        files.length === 1 ? `1 skedar i zgjedhur: ${files[0].name}` :
+                             `${files.length} skedarë të zgjedhur`;
+
+      if (typeof opts.onChange === 'function') opts.onChange(files);
+    }
+
+    // Heqja e një skedari nga lista
+    list.addEventListener('click', e => {
+      const btn = e.target.closest('.tf-remove');
+      if (!btn) return;
+      files.splice(Number(btn.dataset.index), 1);
+      render();
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function formatSize(bytes) {
+      return bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + ' MB'
+                              : Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    }
+
+    return {
+      getFiles: () => files.slice(),
+      clear   : () => { files = []; showErrors([]); render(); }
+    };
+  }
+
+  // Parandalon hapjen e skedarit në browser nëse lëshohet jashtë zonës së ngarkimit
+  ['dragover', 'drop'].forEach(ev => window.addEventListener(ev, e => e.preventDefault()));
+
+  /* =====================================================================
+     INSTANCAT: një për Shpenzimet, një për Arkivën
+     ===================================================================== */
+  const upShpenzim = initUploader(document.getElementById('uploaderShpenzim'));
+  const upDokument = initUploader(document.getElementById('uploaderDokument'));
+
+  /* =====================================================================
+     FORMAT – validim i thjeshtë dhe dërgim (FormData me skedarët)
+     ===================================================================== */
+  function validoFushat(form) {
+    const mungon = Array.from(form.querySelectorAll('[required]')).find(f =>
+      !f.value.trim() || (f.type === 'number' && !(parseFloat(f.value) > 0))
+    );
+    if (mungon) {
+      mungon.classList.add('input-error');
+      mungon.focus();
+      showToast('Plotësoni fushat e detyrueshme.', true);
+      return false;
+    }
+    return true;
+  }
+  document.querySelectorAll('form').forEach(form =>
+    form.addEventListener('input', e => e.target.classList.remove('input-error'))
+  );
+
+  // A. Shpenzimi
+  const formShpenzim = document.getElementById('formShpenzim');
+  formShpenzim.addEventListener('submit', e => {
+    e.preventDefault();
+    const files = upShpenzim.getFiles();
+    if (!files.length) { showToast('Bashkëngjitni të paktën një foto ose PDF të faturës.', true); return; }
+    if (!validoFushat(formShpenzim)) return;
+
+    const fd = new FormData(formShpenzim);           // expense_date, amount_total, currency, category, notes
+    files.forEach(f => fd.append('files', f, f.name));
+    console.log('Shpenzimi për t\'u dërguar:', Object.fromEntries(fd.entries()), files);
+
+    // Integrimi me backend-in (shembull):
+    // fetch('/api/expenses', { method: 'POST', body: fd })
+    //   .then(r => r.ok ? showToast('Shpenzimi u ngarkua.') : showToast('Ngarkimi dështoi.', true));
+
+    showToast('Shpenzimi u ngarkua. Do të kontrollohet nga llogaritari juaj.');
+    formShpenzim.reset();
+    upShpenzim.clear();
+  });
+  formShpenzim.addEventListener('reset', () => upShpenzim.clear());
+
+  // B. Dokumenti në arkivë
+  const formDokument = document.getElementById('formDokument');
+  formDokument.addEventListener('submit', e => {
+    e.preventDefault();
+    const files = upDokument.getFiles();
+    if (!files.length) { showToast('Zgjidhni të paktën një dokument për t\'u ngarkuar.', true); return; }
+    if (!validoFushat(formDokument)) return;
+
+    const fd = new FormData(formDokument);           // doc_type, title
+    files.forEach(f => fd.append('files', f, f.name));
+    console.log('Dokumenti për t\'u dërguar:', Object.fromEntries(fd.entries()), files);
+    // fetch('/api/documents', { method: 'POST', body: fd });
+
+    showToast('Dokumenti u ruajt në arkivën tuaj digjitale.');
+    formDokument.reset();
+    upDokument.clear();
+  });
+  formDokument.addEventListener('reset', () => upDokument.clear());
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('bg-red-600',   isError);
+    t.classList.toggle('bg-slate-900', !isError);
+    t.classList.remove('opacity-0', 'translate-y-4');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-y-4'), 3000);
+  }
+
+  /* ---------- Menyja në mobile + data e sotme si vlerë fillestare ---------- */
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('backdrop');
+  const toggleMenu = () => {
+    sidebar.classList.toggle('-translate-x-full');
+    backdrop.classList.toggle('hidden');
+  };
+  document.getElementById('menuBtn').addEventListener('click', toggleMenu);
+  backdrop.addEventListener('click', toggleMenu);
+
+  (function init() {
+    const sot = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('dataFatures').value = `${sot.getFullYear()}-${pad(sot.getMonth() + 1)}-${pad(sot.getDate())}`;
+  })();
+</script>
+</body>
+</html>

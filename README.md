@@ -2,3 +2,6 @@
 
 Ridrejton `tufa.al` (dhe `www.tufa.al`) te **https://apps.tufa.al** — faqja e aplikacioneve (repo `tufa-apps`).
 Ruan rrugën: `tufa.al/flota/` → `apps.tufa.al/flota/`. `404.html` bën të njëjtën gjë për çdo rrugë tjetër.
+
+**Përjashtim:** `tufa.al/Finance/` shërben drejtpërdrejt aplikacionin **TUFA Finance** (dosja `Finance/`,
+shih `Finance/README.md`); `tufa.al/finance` (me shkronjë të vogël) ridrejton te `/Finance/`.

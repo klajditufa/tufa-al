@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUFA Finance – Hyr në Llogari</title>
+  <meta name="robots" content="noindex">
+
+  <!-- Tailwind CSS (Play CDN – vetëm për zhvillim; në prodhim përdorni Tailwind CLI/PostCSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style type="text/tailwindcss">
+    @layer components {
+      .label       { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+      .input       { @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20; }
+      .input-error { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+      .btn-primary { @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40; }
+      .tab         { @apply flex-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900; }
+      .tab-active  { @apply bg-white text-blue-700 shadow-sm; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+
+  <a href="./" class="mb-8 flex items-center gap-3">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-700 text-base font-extrabold text-white">TF</span>
+    <span class="leading-tight">
+      <span class="block text-xl font-bold text-slate-900">TUFA Finance</span>
+      <span class="block text-xs text-slate-500">Kontabiliteti juaj online</span>
+    </span>
+  </a>
+
+  <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+
+    <!-- Hyr / Krijo Llogari -->
+    <div class="flex rounded-xl bg-slate-100 p-1" role="tablist">
+      <button type="button" class="tab tab-active" data-tab="hyr" role="tab">Hyr në Llogari</button>
+      <button type="button" class="tab" data-tab="krijo" role="tab">Krijo Llogari</button>
+    </div>
+
+    <!-- ===================== HYRJA ===================== -->
+    <form id="formHyr" class="mt-6 space-y-4" novalidate>
+      <div>
+        <label for="hEmail" class="label">Email ose NIPT</label>
+        <input id="hEmail" type="text" class="input" placeholder="emri@biznesi.al ose L21234567A" autocomplete="username" required>
+      </div>
+      <div>
+        <div class="flex items-center justify-between">
+          <label for="hPass" class="label">Fjalëkalimi</label>
+          <a href="#" class="mb-1.5 text-xs font-medium text-blue-700 hover:underline">Harrove fjalëkalimin?</a>
+        </div>
+        <input id="hPass" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <p id="hError" class="hidden text-xs text-red-600"></p>
+      <button type="submit" class="btn-primary">Hyr</button>
+    </form>
+
+    <!-- ===================== KRIJO LLOGARI ===================== -->
+    <form id="formKrijo" class="mt-6 hidden space-y-4" novalidate>
+      <div>
+        <label for="kEmri" class="label">Emri i Kompanisë <span class="text-red-500">*</span></label>
+        <input id="kEmri" type="text" class="input" placeholder="p.sh. ALFA SHPK" autocomplete="organization" required>
+      </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label for="kNipt" class="label">NIPT-i <span class="text-red-500">*</span></label>
+          <input id="kNipt" type="text" class="input font-mono uppercase" placeholder="L21234567A" maxlength="10" required>
+        </div>
+        <div>
+          <label for="kTel" class="label">Telefoni</label>
+          <input id="kTel" type="tel" class="input" placeholder="+355 6x xxx xxxx" autocomplete="tel">
+        </div>
+      </div>
+      <div>
+        <label for="kEmail" class="label">Email <span class="text-red-500">*</span></label>
+        <input id="kEmail" type="email" class="input" placeholder="emri@biznesi.al" autocomplete="email" required>
+      </div>
+      <div>
+        <label for="kPass" class="label">Fjalëkalimi <span class="text-red-500">*</span></label>
+        <input id="kPass" type="password" class="input" placeholder="Të paktën 8 karaktere" autocomplete="new-password" minlength="8" required>
+      </div>
+      <label class="flex items-start gap-2 text-xs text-slate-600">
+        <input id="kPranoj" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" required>
+        <span>Pranoj kushtet e shërbimit dhe politikën e privatësisë së TUFA Finance.</span>
+      </label>
+      <p id="kError" class="hidden text-xs text-red-600"></p>
+      <button type="submit" class="btn-primary">Krijo Llogarinë</button>
+    </form>
+
+    <div class="mt-6 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
+      Je ekonomist i TUFA? <a href="admin/" class="font-semibold text-blue-700 hover:underline">Hyr në Panelin e Ekonomistit →</a>
+    </div>
+  </div>
+
+  <p class="mt-6 max-w-md text-center text-xs text-slate-400">
+    Version demonstrues: hyrja dhe regjistrimi nuk janë ende të lidhura me serverin — çdo hyrje hap panelin e klientit me të dhëna testuese.
+  </p>
+</div>
+
+<script>
+  /* ---------- Tab-et Hyr / Krijo ---------- */
+  const $ = id => document.getElementById(id);
+  function showTab(name) {
+    document.querySelectorAll('[data-tab]').forEach(t => t.classList.toggle('tab-active', t.dataset.tab === name));
+    $('formHyr').classList.toggle('hidden', name !== 'hyr');
+    $('formKrijo').classList.toggle('hidden', name !== 'krijo');
+  }
+  document.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  if (location.hash === '#krijo') showTab('krijo');     // "Fillo Tani" nga faqja hyrëse
+
+  /* ---------- Validim i thjeshtë; në prodhim: POST /api/auth/login dhe /api/auth/register ---------- */
+  const NIPT_RE = /^[A-Z][0-9]{8}[A-Z]$/;
+  function kerko(form, errorEl) {
+    const bosh = Array.from(form.querySelectorAll('[required]')).find(f => f.type === 'checkbox' ? !f.checked : !f.value.trim());
+    if (bosh) { bosh.classList.add('input-error'); bosh.focus(); errorEl.textContent = 'Plotësoni fushat e detyrueshme.'; errorEl.classList.remove('hidden'); return false; }
+    errorEl.classList.add('hidden');
+    return true;
+  }
+  document.querySelectorAll('form').forEach(f => f.addEventListener('input', e => e.target.classList.remove('input-error')));
+  $('kNipt').addEventListener('input', () => { $('kNipt').value = $('kNipt').value.toUpperCase().replace(/\s/g, ''); });
+
+  $('formHyr').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!kerko($('formHyr'), $('hError'))) return;
+    // const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ login, password }) }) ...
+    location.href = 'app/dashboard.html';
+  });
+
+  $('formKrijo').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!kerko($('formKrijo'), $('kError'))) return;
+    if (!NIPT_RE.test($('kNipt').value)) { $('kNipt').classList.add('input-error'); $('kError').textContent = 'NIPT-i duhet të ketë formatin L21234567A.'; $('kError').classList.remove('hidden'); return; }
+    if ($('kPass').value.length < 8) { $('kPass').classList.add('input-error'); $('kError').textContent = 'Fjalëkalimi duhet të ketë të paktën 8 karaktere.'; $('kError').classList.remove('hidden'); return; }
+    // const res = await fetch('/api/auth/register', ...) → krijon rreshtin në businesses + users (shih db/001-schema.sql)
+    location.href = 'app/dashboard.html';
+  });
+</script>
+</body>
+</html>

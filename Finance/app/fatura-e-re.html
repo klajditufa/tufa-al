@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUFA Finance – Faturë e Re</title>
+
+  <!-- Tailwind CSS (Play CDN – vetëm për zhvillim; në prodhim përdorni Tailwind CLI/PostCSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style type="text/tailwindcss">
+    @layer components {
+      /* Shell-i i aplikacionit (i njëjtë si në dashboard.html) */
+      .nav-link      { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-blue-100 transition hover:bg-blue-700 hover:text-white; }
+      .nav-active    { @apply bg-blue-700 text-white; }
+      .card          { @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm; }
+      .icon          { @apply h-5 w-5 shrink-0; }
+      /* Elementët e formës */
+      .label         { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+      .input         { @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20; }
+      .input-error   { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+      .hint          { @apply mt-1 text-xs text-slate-400; }
+      .error-msg     { @apply mt-1 text-xs text-red-600; }
+      .section-title { @apply text-base font-semibold text-slate-900; }
+      .btn-primary   { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40; }
+      .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen">
+
+  <!-- ============================================================
+       MENYJA ANËSORE (SIDEBAR)
+       ============================================================ -->
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-blue-800 text-blue-100 transition-transform duration-200 md:static md:translate-x-0">
+    <div class="flex h-16 items-center gap-3 border-b border-blue-700 px-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-extrabold text-blue-800">TF</div>
+      <div class="leading-tight">
+        <p class="text-base font-bold text-white">TUFA Finance</p>
+        <p class="text-[11px] text-blue-300">Kontabiliteti juaj online</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1 px-3 py-4 text-sm">
+      <a href="dashboard.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+        Paneli
+      </a>
+      <a href="fatura-e-re.html" class="nav-link nav-active">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Të Ardhurat
+      </a>
+      <a href="ngarko-dokumente.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        Shpenzimet
+      </a>
+      <a href="dashboard.html#deklarimet" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+        Deklarimet
+      </a>
+      <a href="ngarko-dokumente.html#arkiva" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        Dokumentet
+      </a>
+    </nav>
+
+    <div class="space-y-1 border-t border-blue-700 px-3 py-4 text-sm">
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Parametrat
+      </a>
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        Ndihmë / Llogaritari im
+      </a>
+    </div>
+  </aside>
+  <div id="backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/50 md:hidden"></div>
+
+  <!-- ============================================================
+       PËRMBAJTJA
+       ============================================================ -->
+  <div class="flex min-w-0 flex-1 flex-col">
+
+    <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
+      <div class="flex items-center gap-3">
+        <button id="menuBtn" type="button" class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden" aria-label="Hap menynë">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+        <div>
+          <h1 class="text-lg font-semibold text-slate-900">Të Ardhurat</h1>
+          <p class="text-xs text-slate-500">Faturat e Mia › Faturë e Re</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800">DS</div>
+        <div class="hidden leading-tight sm:block">
+          <p class="text-sm font-medium text-slate-800">Demo SHPK</p>
+          <p class="text-xs text-slate-500">L21234567A</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8">
+      <div class="mx-auto max-w-6xl">
+
+        <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Faturë e Re</h2>
+            <p class="mt-1 text-slate-500">Plotësoni të dhënat e klientit dhe të shërbimit. Totali me TVSH llogaritet automatikisht.</p>
+          </div>
+          <a href="#" class="text-sm font-semibold text-blue-700 hover:underline">← Kthehu te Faturat e Mia</a>
+        </div>
+
+        <!-- ================================================================
+             MODULI I FATURIMIT (fillon këtu)
+             Emrat e fushave (name="...") përputhen me kolonat e tabelës
+             invoices në db/001-schema.sql.
+             ================================================================ -->
+        <form id="invoiceForm" class="grid grid-cols-1 gap-6 lg:grid-cols-3" novalidate>
+
+          <!-- Kolona e majtë: të dhënat -->
+          <div class="space-y-6 lg:col-span-2">
+
+            <!-- 1. Klienti -->
+            <section class="card">
+              <h3 class="section-title">1. Të dhënat e klientit</h3>
+              <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                  <label for="emriKlientit" class="label">Emri i Klientit <span class="text-red-500">*</span></label>
+                  <input id="emriKlientit" name="customer_name" type="text" class="input" placeholder="p.sh. ALFA SHPK" autocomplete="organization" required>
+                  <p class="error-msg" data-error-for="emriKlientit"></p>
+                </div>
+                <div>
+                  <label for="nipt" class="label">NIPT-i i klientit</label>
+                  <input id="nipt" name="customer_nipt" type="text" class="input uppercase" placeholder="p.sh. L21234567A" maxlength="10" autocomplete="off">
+                  <p class="hint">Formati: 1 shkronjë + 8 shifra + 1 shkronjë</p>
+                  <p class="error-msg" data-error-for="nipt"></p>
+                </div>
+                <div>
+                  <label for="adresa" class="label">Adresa <span class="text-slate-400">(opsionale)</span></label>
+                  <input id="adresa" name="customer_address" type="text" class="input" placeholder="Qyteti, rruga">
+                </div>
+              </div>
+            </section>
+
+            <!-- 2. Shërbimi dhe vlera -->
+            <section class="card">
+              <h3 class="section-title">2. Shërbimi dhe vlera</h3>
+              <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-6">
+                <div class="sm:col-span-6">
+                  <label for="pershkrimi" class="label">Përshkrimi i shërbimit <span class="text-red-500">*</span></label>
+                  <textarea id="pershkrimi" name="description" rows="3" class="input" placeholder="p.sh. Shërbime konsulence financiare – Tetor 2026" required></textarea>
+                  <p class="error-msg" data-error-for="pershkrimi"></p>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="dataFatures" class="label">Data e faturës</label>
+                  <input id="dataFatures" name="invoice_date" type="date" class="input">
+                </div>
+                <div class="sm:col-span-2">
+                  <label for="nrFatures" class="label">Nr. i faturës</label>
+                  <input id="nrFatures" name="invoice_number" type="text" class="input bg-slate-50 text-slate-500" readonly>
+                </div>
+                <div class="sm:col-span-2">
+                  <label for="monedha" class="label">Monedha</label>
+                  <select id="monedha" name="currency" class="input">
+                    <option value="LEK" selected>LEK</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+
+                <div class="sm:col-span-3">
+                  <label for="vlera" class="label">Vlera (pa TVSH) <span class="text-red-500">*</span></label>
+                  <div class="relative">
+                    <input id="vlera" name="subtotal" type="number" min="0" step="0.01" inputmode="decimal"
+                           class="input pr-14 text-right font-semibold" placeholder="0.00" required>
+                    <span id="vleraMonedha" class="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-sm font-medium text-slate-500">LEK</span>
+                  </div>
+                  <p class="error-msg" data-error-for="vlera"></p>
+                </div>
+                <div class="sm:col-span-3">
+                  <label for="tvsh" class="label">TVSH</label>
+                  <select id="tvsh" name="vat_rate" class="input">
+                    <option value="20" selected>20% – Shkalla standarde</option>
+                    <option value="10">10% – Shkalla e reduktuar (inpute bujqësore)</option>
+                    <option value="6">6% – Shkalla e reduktuar (akomodim, turizëm)</option>
+                    <option value="0">0% – Eksport / i përjashtuar</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Kolona e djathtë: përmbledhja e faturës (ngjitet gjatë lëvizjes) -->
+          <aside>
+            <section class="card lg:sticky lg:top-24">
+              <h3 class="section-title">Përmbledhja e faturës</h3>
+              <p class="mt-1 text-xs text-slate-500">
+                Lëshuar për: <span id="klientPreview" class="font-medium text-slate-700">—</span>
+              </p>
+
+              <dl class="mt-5 space-y-3 text-sm">
+                <div class="flex items-center justify-between">
+                  <dt class="text-slate-500">Vlera pa TVSH</dt>
+                  <dd id="sumBaze" class="font-medium text-slate-800">0.00 LEK</dd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-slate-500">TVSH (<span id="sumPerqindja">20</span>%)</dt>
+                  <dd id="sumTvsh" class="font-medium text-slate-800">0.00 LEK</dd>
+                </div>
+                <div class="flex items-center justify-between border-t border-slate-200 pt-3">
+                  <dt class="text-base font-semibold text-slate-900">Totali me TVSH</dt>
+                  <dd id="sumTotal" class="text-xl font-bold text-blue-700">0.00 LEK</dd>
+                </div>
+              </dl>
+
+              <div class="mt-6 space-y-2">
+                <button type="submit" class="btn-primary w-full">Lësho Faturën</button>
+                <button type="button" id="btnDraft" class="btn-secondary w-full">Ruaj si Draft</button>
+              </div>
+              <p class="mt-4 text-xs text-slate-400">Fushat me * janë të detyrueshme. Fatura do të jetë e dukshme edhe për llogaritarin tuaj.</p>
+            </section>
+          </aside>
+        </form>
+        <!-- ================================================================
+             MODULI I FATURIMIT (mbaron këtu)
+             ================================================================ -->
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Njoftim i shkurtër (toast) -->
+<div id="toast" role="status" aria-live="polite"
+     class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 translate-y-4 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white opacity-0 shadow-lg transition"></div>
+
+<script>
+  /* =====================================================================
+     MODULI I FATURIMIT – JavaScript
+     ===================================================================== */
+  const $  = id => document.getElementById(id);
+  const form = $('invoiceForm');
+  const el = {
+    emri      : $('emriKlientit'),
+    nipt      : $('nipt'),
+    adresa    : $('adresa'),
+    pershkrimi: $('pershkrimi'),
+    data      : $('dataFatures'),
+    nr        : $('nrFatures'),
+    monedha   : $('monedha'),
+    vlera     : $('vlera'),
+    tvsh      : $('tvsh')
+  };
+
+  /* ---------- Ndihmës ---------- */
+  const round2  = n => Math.round((n + Number.EPSILON) * 100) / 100;     // rrumbullakim në 2 shifra
+  const fmt     = (n, cur) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + cur;
+  const NIPT_RE = /^[A-Z][0-9]{8}[A-Z]$/;                                  // p.sh. L21234567A
+
+  /* =====================================================================
+     1. LLOGARITJA AUTOMATIKE E TVSH-së DHE TOTALIT
+        Thirret sapo përdoruesi shkruan vlerën bazë ose ndryshon shkallën
+        e TVSH-së / monedhën.
+     ===================================================================== */
+  function llogaritTotalin() {
+    const baza      = parseFloat(el.vlera.value) || 0;   // Vlera pa TVSH
+    const perqindja = parseFloat(el.tvsh.value)  || 0;   // 20, 10, 6 ose 0
+    const tvsh      = round2(baza * perqindja / 100);    // TVSH = baza × 20%
+    const totali    = round2(baza + tvsh);               // Totali me TVSH
+    const cur       = el.monedha.value;
+
+    $('sumPerqindja').textContent  = perqindja;
+    $('sumBaze').textContent       = fmt(baza, cur);
+    $('sumTvsh').textContent       = fmt(tvsh, cur);
+    $('sumTotal').textContent      = fmt(totali, cur);
+    $('vleraMonedha').textContent  = cur;
+
+    return { baza, perqindja, tvsh, totali };
+  }
+
+  el.vlera.addEventListener('input',    llogaritTotalin);   // sapo shkruhet vlera
+  el.tvsh.addEventListener('change',    llogaritTotalin);
+  el.monedha.addEventListener('change', llogaritTotalin);
+
+  /* ---------- Përditësime të vogla të ndërfaqes ---------- */
+  el.emri.addEventListener('input', () => {
+    $('klientPreview').textContent = el.emri.value.trim() || '—';
+  });
+  el.nipt.addEventListener('input', () => {
+    el.nipt.value = el.nipt.value.toUpperCase().replace(/\s/g, '');
+  });
+  // Hiq shënimin e gabimit sapo përdoruesi fillon të korrigjojë fushën
+  form.addEventListener('input', e => setError(e.target, ''));
+
+  /* =====================================================================
+     2. VALIDIMI
+     ===================================================================== */
+  function setError(input, msg) {
+    const box = document.querySelector(`[data-error-for="${input.id}"]`);
+    if (!box) return;
+    input.classList.toggle('input-error', Boolean(msg));
+    box.textContent = msg || '';
+  }
+
+  function validoFormen() {
+    let ok = true;
+    const kerko = (input, msg) => {
+      if (!input.value.trim()) { setError(input, msg); ok = false; }
+    };
+    kerko(el.emri,       'Shkruani emrin e klientit.');
+    kerko(el.pershkrimi, 'Shkruani përshkrimin e shërbimit.');
+
+    if (!(parseFloat(el.vlera.value) > 0)) {
+      setError(el.vlera, 'Vlera duhet të jetë më e madhe se 0.');
+      ok = false;
+    }
+    if (el.nipt.value && !NIPT_RE.test(el.nipt.value)) {
+      setError(el.nipt, 'NIPT-i duhet të ketë formatin L21234567A.');
+      ok = false;
+    }
+    return ok;
+  }
+
+  /* =====================================================================
+     3. RUAJTJA (payload-i përputhet me tabelën invoices në db/001-schema.sql)
+     ===================================================================== */
+  function ndertoPayload(status) {
+    const { baza, perqindja, tvsh, totali } = llogaritTotalin();
+    return {
+      invoice_number  : el.nr.value,
+      invoice_date    : el.data.value,
+      customer_name   : el.emri.value.trim(),
+      customer_nipt   : el.nipt.value || null,
+      customer_address: el.adresa.value.trim() || null,
+      description     : el.pershkrimi.value.trim(),
+      currency        : el.monedha.value === 'LEK' ? 'ALL' : 'EUR',   // ISO 4217: ALL = LEK
+      subtotal        : baza,
+      vat_rate        : perqindja,   // në backend bëhet rresht në invoice_items.vat_rate
+      vat_amount      : tvsh,
+      total           : totali,
+      status                         // 'issued' ose 'draft'
+    };
+  }
+
+  async function ruajFaturen(status) {
+    if (!validoFormen()) {
+      showToast('Kontrolloni fushat e shënuara me të kuqe.', true);
+      return;
+    }
+    const payload = ndertoPayload(status);
+    console.log('Fatura për t\'u dërguar në API:', payload);
+
+    // Integrimi me backend-in (shembull):
+    // const res = await fetch('/api/invoices', {
+    //   method : 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body   : JSON.stringify(payload)
+    // });
+    // if (!res.ok) { showToast('Fatura nuk u ruajt. Provoni përsëri.', true); return; }
+
+    showToast(status === 'draft' ? 'Fatura u ruajt si draft.' : 'Fatura u lëshua me sukses!');
+  }
+
+  form.addEventListener('submit', e => { e.preventDefault(); ruajFaturen('issued'); });
+  $('btnDraft').addEventListener('click', () => ruajFaturen('draft'));
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.toggle('bg-red-600',   isError);
+    t.classList.toggle('bg-slate-900', !isError);
+    t.classList.remove('opacity-0', 'translate-y-4');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-y-4'), 3000);
+  }
+
+  /* =====================================================================
+     4. MENYJA NË MOBILE
+     ===================================================================== */
+  const sidebar  = $('sidebar');
+  const backdrop = $('backdrop');
+  const toggleMenu = () => {
+    sidebar.classList.toggle('-translate-x-full');
+    backdrop.classList.toggle('hidden');
+  };
+  $('menuBtn').addEventListener('click', toggleMenu);
+  backdrop.addEventListener('click', toggleMenu);
+
+  /* =====================================================================
+     5. NISJA
+     ===================================================================== */
+  (function init() {
+    const sot = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    el.data.value = `${sot.getFullYear()}-${pad(sot.getMonth() + 1)}-${pad(sot.getDate())}`;
+    el.nr.value   = `${sot.getFullYear()}/0001`;   // në prodhim numri vjen nga serveri (sekuencë për çdo biznes)
+    llogaritTotalin();
+  })();
+</script>
+</body>
+</html>

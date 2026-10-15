@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUFA Finance – Paneli i Ekonomistit</title>
+
+  <!-- Tailwind CSS (Play CDN – vetëm për zhvillim; në prodhim përdorni Tailwind CLI/PostCSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style type="text/tailwindcss">
+    @layer components {
+      /* Shell-i i aplikacionit */
+      .nav-link      { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-blue-100 transition hover:bg-blue-700 hover:text-white; }
+      .nav-active    { @apply bg-blue-700 text-white; }
+      .card          { @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm; }
+      .icon          { @apply h-5 w-5 shrink-0; }
+      /* Forma */
+      .label         { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+      .input         { @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20; }
+      .input-error   { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+      .error-msg     { @apply mt-1 text-xs text-red-600; }
+      .btn-primary   { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40; }
+      .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white; }
+      .btn-danger    { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700; }
+      .hint          { @apply mt-1 text-xs text-slate-400; }
+      /* Matrica */
+      .btn-declare      { @apply inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30; }
+      .btn-declare-late { @apply border-red-300 bg-red-50 text-red-700 hover:border-red-500 hover:bg-red-100 hover:text-red-800; }
+      .chip             { @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset; }
+      .chip-done        { @apply bg-green-50 text-green-700 ring-green-600/20; }
+      .chip-pending     { @apply bg-slate-100 text-slate-600 ring-slate-500/20; }
+      .chip-late        { @apply bg-red-50 text-red-700 ring-red-600/20; }
+      .chip-pkg-baze    { @apply bg-slate-100 text-slate-700 ring-slate-500/20; }
+      .chip-pkg-standard{ @apply bg-blue-50 text-blue-700 ring-blue-600/20; }
+      .chip-pkg-premium { @apply bg-indigo-50 text-indigo-700 ring-indigo-600/20; }
+      .chip-ob          { @apply bg-white text-slate-600 ring-slate-300; }
+      .tab              { @apply rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900; }
+      .tab-active       { @apply bg-white text-blue-700 shadow-sm; }
+      .th               { @apply px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
+      .icon-btn         { @apply rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700; }
+    }
+  </style>
+
+  <style>
+    /* Kolona e subjektit qëndron fikse gjatë lëvizjes horizontale të matricës */
+    .matrix th.sticky-col, .matrix td.sticky-col { position: sticky; left: 0; z-index: 1; }
+    .matrix thead th { position: sticky; top: 0; z-index: 2; background: #f8fafc; }
+    .matrix th.sticky-col { z-index: 3; }
+    .matrix td.sticky-col { background: #fff; box-shadow: 1px 0 0 #e2e8f0; }
+    .matrix tr:hover td.sticky-col { background: #f8fafc; }
+    .matrix tr.row-complete td.sticky-col { box-shadow: inset 3px 0 0 #22c55e, 1px 0 0 #e2e8f0; }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen">
+
+  <!-- ============================================================
+       MENYJA ANËSORE – PANELI I EKONOMISTIT
+       ============================================================ -->
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-blue-800 text-blue-100 transition-transform duration-200 md:static md:translate-x-0">
+    <div class="flex h-16 items-center gap-3 border-b border-blue-700 px-5">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-extrabold text-blue-800">TF</div>
+      <div class="leading-tight">
+        <p class="text-base font-bold text-white">TUFA Finance</p>
+        <p class="text-[11px] text-blue-300">Paneli i Ekonomistit</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1 px-3 py-4 text-sm">
+      <a href="#" data-view="matrica" class="nav-link nav-active">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+        Matrica e Deklarimeve
+      </a>
+      <a href="#" data-view="regjistri" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+        Regjistri i Subjekteve
+      </a>
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46"/></svg>
+        Njoftime për klientët
+      </a>
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+        Dokumentet e klientëve
+      </a>
+    </nav>
+
+    <div class="space-y-1 border-t border-blue-700 px-3 py-4 text-sm">
+      <a href="#" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Parametrat
+      </a>
+      <a href="../hyr.html" class="nav-link">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+        Dil
+      </a>
+    </div>
+  </aside>
+  <div id="backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/50 md:hidden"></div>
+
+  <!-- ============================================================
+       PËRMBAJTJA
+       ============================================================ -->
+  <div class="flex min-w-0 flex-1 flex-col">
+
+    <header class="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 md:px-8">
+      <div class="flex items-center gap-3">
+        <button id="menuBtn" type="button" class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden" aria-label="Hap menynë">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+        <div>
+          <h1 class="text-lg font-semibold text-slate-900">Paneli i Ekonomistit</h1>
+          <p class="text-xs text-slate-500">Të gjithë klientët, nga një vend i vetëm</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 md:gap-5">
+        <!-- Kasaforta e kredencialeve: çelësi i enkriptimit mbahet vetëm në memorie -->
+        <button id="btnVault" type="button" class="hidden items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 sm:inline-flex" title="Kasaforta e fjalëkalimeve të e-Albania">
+          <svg id="vaultIconClosed" class="h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+          <svg id="vaultIconOpen" class="hidden h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+          <span id="vaultStatus">Kasafortë e mbyllur</span>
+        </button>
+
+        <!-- Muaji i deklarimit -->
+        <label class="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
+          Muaji i deklarimit
+          <select id="monthSelect" class="input w-auto py-1.5 text-sm font-semibold text-slate-800"></select>
+        </label>
+        <div class="flex items-center gap-3 border-l border-slate-200 pl-3 md:pl-5">
+          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800">KT</div>
+          <div class="hidden leading-tight sm:block">
+            <p class="text-sm font-medium text-slate-800">Klajdi Tufa</p>
+            <p class="text-xs text-slate-500">Ekonomist · TUFA Finance</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 space-y-6 p-4 md:p-8">
+
+      <!-- ========================================================
+           5. PËRMBLEDHJA MUJORE (PROGRESS TRACKER) – mbushet nga JS
+           ======================================================== -->
+      <section id="progressBox" class="card"></section>
+
+      <!-- ========================================================
+           TOOLBAR: pamjet, kërkimi, filtri, veprimet
+           ======================================================== -->
+      <section class="flex flex-wrap items-center gap-3">
+        <div class="flex rounded-xl bg-slate-200/70 p-1" role="tablist">
+          <button type="button" data-view="matrica"   class="tab tab-active" role="tab">Matrica e Deklarimeve</button>
+          <button type="button" data-view="regjistri" class="tab" role="tab">Regjistri i Subjekteve</button>
+        </div>
+
+        <div class="relative min-w-[240px] flex-1">
+          <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+          <input id="searchInput" type="search" class="input pl-9" placeholder="Kërko NIPT, emër subjekti ose administrator…" autocomplete="off">
+        </div>
+
+        <select id="filterSelect" class="input w-auto" aria-label="Filtro subjektet">
+          <option value="all">Të gjitha subjektet</option>
+          <option value="incomplete">Me detyrime të papërfunduara</option>
+          <option value="complete">Të përfunduara plotësisht</option>
+          <!-- opsionet "Pa X të dorëzuar" shtohen nga JS, një për çdo detyrim -->
+        </select>
+
+        <button id="btnExport" type="button" class="btn-secondary">
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          Eksporto CSV
+        </button>
+        <button id="btnAdd" type="button" class="btn-primary">
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Shto Subjekt
+        </button>
+      </section>
+
+      <!-- ========================================================
+           2 + 3. MATRICA E DEKLARIMEVE (Data Table)
+           ======================================================== -->
+      <section id="viewMatrica" class="card overflow-hidden p-0">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-6 py-4">
+          <div>
+            <h2 class="font-semibold text-slate-900">Matrica e Deklarimeve</h2>
+            <p class="text-xs text-slate-500">Rreshtat: subjektet (NIPT-et) · Kolonat: detyrimet · Periudha tatimore: <span id="periodLabel" class="font-medium text-slate-700"></span></p>
+          </div>
+          <p id="countLabel" class="text-xs text-slate-500"></p>
+        </div>
+
+        <div class="max-h-[70vh] overflow-auto">
+          <table class="matrix min-w-[1180px] w-full text-sm">
+            <thead id="matrixHead" class="border-b border-slate-200"></thead>
+            <tbody id="matrixBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Legjenda -->
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
+          <span class="flex items-center gap-1.5"><span class="btn-declare pointer-events-none px-2 py-0.5">Deklaro</span> E papërfunduar – brenda afatit</span>
+          <span class="flex items-center gap-1.5"><span class="btn-declare btn-declare-late pointer-events-none px-2 py-0.5">Deklaro</span> E papërfunduar – afati ka kaluar</span>
+          <span class="flex items-center gap-1.5"><span class="chip chip-done">✓ E përfunduar</span> Deklaruar (kliko ↺ për ta kthyer)</span>
+          <span class="flex items-center gap-1.5"><span class="text-slate-300">—</span> Nuk aplikohet për subjektin</span>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           1. REGJISTRI I SUBJEKTEVE (Client Management)
+           ======================================================== -->
+      <section id="viewRegjistri" class="card hidden overflow-hidden p-0">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-6 py-4">
+          <div>
+            <h2 class="font-semibold text-slate-900">Regjistri i Subjekteve</h2>
+            <p class="text-xs text-slate-500">Profilet e bizneseve që menaxhoni: shtoni, modifikoni ose fshini</p>
+          </div>
+          <p id="countLabelReg" class="text-xs text-slate-500"></p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-[1100px] w-full text-sm">
+            <thead class="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th class="th pl-6">Emri i Subjektit</th>
+                <th class="th">NIPT-i</th>
+                <th class="th">Administratori</th>
+                <th class="th">Paketa e Shërbimit</th>
+                <th class="th">e-Albania / Portalet</th>
+                <th class="th">Detyrimet</th>
+                <th class="th pr-6 text-right">Veprime</th>
+              </tr>
+            </thead>
+            <tbody id="registryBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="text-center text-xs text-slate-400">
+        Të dhënat testuese ruhen lokalisht në këtë browser (localStorage) derisa të lidhet backend-i; fjalëkalimet e e-Albania ruhen vetëm të enkriptuara.
+        <button id="btnReset" type="button" class="font-medium text-blue-700 hover:underline">Rivendos të dhënat testuese</button>
+      </p>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALI: SHTO / MODIFIKO SUBJEKT
+     ============================================================ -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+  <div class="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="flex items-start justify-between">
+      <div>
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-900">Shto Subjekt</h3>
+        <p class="text-xs text-slate-500">Profili i biznesit në regjistrin tuaj</p>
+      </div>
+      <button type="button" id="btnModalClose" class="icon-btn" aria-label="Mbyll">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="subjectForm" class="mt-5 space-y-4" novalidate>
+      <input type="hidden" id="fId">
+      <div>
+        <label for="fName" class="label">Emri i Subjektit <span class="text-red-500">*</span></label>
+        <input id="fName" type="text" class="input" placeholder="p.sh. ALFA KONSTRUKSION SHPK" required>
+        <p class="error-msg" data-error-for="fName"></p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label for="fNipt" class="label">NIPT-i <span class="text-red-500">*</span></label>
+          <input id="fNipt" type="text" class="input font-mono uppercase" placeholder="L21234567A" maxlength="10" required>
+          <p class="error-msg" data-error-for="fNipt"></p>
+        </div>
+        <div>
+          <label for="fPackage" class="label">Paketa e Shërbimit <span class="text-red-500">*</span></label>
+          <select id="fPackage" class="input" required>
+            <option value="Bazë">Bazë</option>
+            <option value="Standard" selected>Standard</option>
+            <option value="Premium">Premium</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="fAdmin" class="label">Administratori <span class="text-red-500">*</span></label>
+        <input id="fAdmin" type="text" class="input" placeholder="Emri dhe mbiemri i administratorit" required>
+        <p class="error-msg" data-error-for="fAdmin"></p>
+      </div>
+
+      <!-- Aksesi në portalet tatimore: me llogarinë e-Albania të subjektit (përdoruesi = NIPT-i)
+           hyhet në Selfcare (fiskalizimi) dhe C@TS (deklarimet) për të marrë të dhënat -->
+      <fieldset class="rounded-xl border border-slate-200 p-4">
+        <legend class="px-1 text-sm font-semibold text-slate-800">Aksesi në portalet tatimore (e-Albania)</legend>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label for="fUser" class="label">Përdoruesi (e-Albania)</label>
+            <input id="fUser" type="text" class="input bg-slate-50 font-mono text-slate-600" readonly placeholder="= NIPT-i" tabindex="-1">
+            <p class="hint">NIPT-i është emri i përdoruesit; plotësohet vetë.</p>
+          </div>
+          <div>
+            <label for="fPass" class="label">Fjalëkalimi i e-Albania</label>
+            <div class="relative">
+              <input id="fPass" type="password" class="input pr-10" autocomplete="new-password" placeholder="Fjalëkalimi i llogarisë e-Albania">
+              <button type="button" id="btnTogglePass" class="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2" aria-label="Shfaq ose fshih fjalëkalimin">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </button>
+            </div>
+            <p id="passHint" class="hint">Ruhet i enkriptuar (AES-256-GCM); nuk shfaqet më pa fjalëkalimin kryesor.</p>
+            <button type="button" id="btnRemovePass" class="mt-1 hidden text-xs font-medium text-red-600 hover:underline">Hiq fjalëkalimin e ruajtur</button>
+          </div>
+        </div>
+        <div class="mt-3">
+          <p class="label">Portalet që përdoren për këtë subjekt</p>
+          <div class="flex flex-wrap gap-x-6 gap-y-2">
+            <label class="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" id="fSelfcare" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked>
+              Selfcare – fiskalizimi
+              <a href="https://efiskalizimi-app.tatime.gov.al/self-care/#/dashboard" target="_blank" rel="noopener" class="text-xs text-blue-700 hover:underline">hap ↗</a>
+            </label>
+            <label class="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" id="fCats" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked>
+              C@TS – deklarimet
+              <a href="https://efiling.tatime.gov.al/cats_public/" target="_blank" rel="noopener" class="text-xs text-blue-700 hover:underline">hap ↗</a>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+      <div>
+        <p class="label">Detyrimet që aplikohen për këtë subjekt</p>
+        <div id="fObligations" class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2"></div>
+      </div>
+      <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
+        <button type="button" id="btnModalCancel" class="btn-secondary">Anulo</button>
+        <button type="submit" id="btnModalSave" class="btn-primary">Ruaj Subjektin</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALI I KASAFORTËS: fjalëkalimi kryesor / shfaqja e një fjalëkalimi
+     ============================================================ -->
+<div id="vaultModal" data-mode="unlock" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 p-4">
+  <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="vaultTitle">
+    <div class="flex items-center gap-3">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+      </span>
+      <h3 id="vaultTitle" class="text-base font-bold text-slate-900">Hap kasafortën</h3>
+    </div>
+    <p id="vaultText" class="mt-3 text-sm text-slate-500"></p>
+
+    <form id="vaultForm" class="mt-4 space-y-2" novalidate>
+      <input id="vaultPass" type="password" class="input" placeholder="Fjalëkalimi kryesor" autocomplete="current-password">
+      <input id="vaultPass2" type="password" class="input hidden" placeholder="Përsërit fjalëkalimin kryesor" autocomplete="new-password">
+      <p id="vaultError" class="error-msg"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" id="vaultCancel" class="btn-secondary">Anulo</button>
+        <button type="submit" class="btn-primary">Konfirmo</button>
+      </div>
+    </form>
+
+    <div id="vaultReveal" class="mt-4 hidden">
+      <div class="flex gap-2">
+        <input id="vaultRevealValue" type="text" class="input font-mono" readonly>
+        <button type="button" id="vaultCopy" class="btn-secondary">Kopjo</button>
+      </div>
+      <div class="flex justify-end pt-3">
+        <button type="button" id="vaultClose" class="btn-primary">Mbyll</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Njoftim i shkurtër (toast) -->
+<div id="toast" role="status" aria-live="polite"
+     class="pointer-events-none fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 translate-y-4 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white opacity-0 shadow-lg transition"></div>
+
+<script>
+  /* =====================================================================
+     1. KONFIGURIMI
+     ===================================================================== */
+  // Portalet e DPT-së ku hyhet me llogarinë e-Albania të subjektit
+  const PORTALS = {
+    selfcare: { label: 'Selfcare', title: 'Selfcare – fiskalizimi (faturat)',   url: 'https://efiskalizimi-app.tatime.gov.al/self-care/#/dashboard' },
+    cats:     { label: 'C@TS',     title: 'C@TS – deklarimet tatimore',          url: 'https://efiling.tatime.gov.al/cats_public/' }
+  };
+  const VAULT_STORE = 'tufa_vault_v1';
+  // Kolonat e matricës (afati = dita e muajit të deklarimit brenda së cilës dorëzohet)
+  const OBLIGATIONS = [
+    { key: 'sigurime',    label: 'Sigurimet Shoqërore', short: 'Sigurimet',   deadlineDay: 20 },
+    { key: 'tvsh',        label: 'TVSH',                short: 'TVSH',        deadlineDay: 14 },
+    { key: 'burim',       label: 'Tatim në Burim',      short: 'T. Burim',    deadlineDay: 20 },
+    { key: 'fitimi',      label: 'Tatim Fitimi',        short: 'T. Fitimi',   deadlineDay: 30, note: 'paradhënie' },
+    { key: 'listepagesa', label: 'Listëpagesa',         short: 'Listëpagesa', deadlineDay: 20 }
+  ];
+  const ALL_KEYS   = OBLIGATIONS.map(o => o.key);
+  const PKG_CLASS  = { 'Bazë': 'chip-pkg-baze', 'Standard': 'chip-pkg-standard', 'Premium': 'chip-pkg-premium' };
+  const MONTHS_SQ  = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
+  const MONTHS_SHORT = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gush', 'Sht', 'Tet', 'Nën', 'Dhj'];
+  const NIPT_RE    = /^[A-Z][0-9]{8}[A-Z]$/;
+  const STORAGE_KEY = 'tufa_admin_demo_v1';
+
+  /* =====================================================================
+     2. TË DHËNAT TESTUESE (MOCKS) – 5 subjekte
+        Në prodhim: GET /api/subjects dhe GET /api/declarations?month=YYYY-MM
+     ===================================================================== */
+  // portals    = cilat portale përdor subjekti
+  // credential = fjalëkalimi i e-Albania, GJITHMONË i enkriptuar: { username, iv, ct, updatedAt } ose null
+  const MOCK_SUBJECTS = [
+    { id: 1, name: 'ALFA KONSTRUKSION SHPK', nipt: 'L21234567A', admin: 'Arben Hoxha',      package: 'Premium',  obligations: [...ALL_KEYS], portals: { selfcare: true, cats: true }, credential: null },
+    { id: 2, name: 'BETA MARKET SHPK',       nipt: 'K71826009E', admin: 'Elda Kraja',       package: 'Standard', obligations: ['sigurime', 'tvsh', 'fitimi', 'listepagesa'], portals: { selfcare: true, cats: true }, credential: null },
+    { id: 3, name: 'GENTIAN DERVISHI P.F.',  nipt: 'M01417023B', admin: 'Gentian Dervishi', package: 'Bazë',     obligations: ['sigurime', 'listepagesa'], portals: { selfcare: false, cats: true }, credential: null },
+    { id: 4, name: 'DELTA TRAVEL SHPK',      nipt: 'L42115004C', admin: 'Mirela Shehu',     package: 'Standard', obligations: [...ALL_KEYS], portals: { selfcare: true, cats: true }, credential: null },
+    { id: 5, name: 'EPSILON OIL SHPK',       nipt: 'J61813050D', admin: 'Fatos Gjoka',      package: 'Premium',  obligations: [...ALL_KEYS], portals: { selfcare: true, cats: true }, credential: null }
+  ];
+
+  const daysAgo = n => new Date(Date.now() - n * 864e5).toISOString();
+
+  function mockState() {
+    const m = currentMonthKey();
+    return {
+      subjects: MOCK_SUBJECTS.map(s => ({ ...s, obligations: [...s.obligations], portals: { ...s.portals } })),
+      // declarations[muaji][idSubjekti][detyrimi] = { at: data/ora e deklarimit }
+      declarations: {
+        [m]: {
+          1: { sigurime: { at: daysAgo(3) }, tvsh: { at: daysAgo(2) }, listepagesa: { at: daysAgo(3) } },
+          2: { tvsh: { at: daysAgo(1) } },
+          4: { sigurime: { at: daysAgo(5) }, tvsh: { at: daysAgo(4) }, burim: { at: daysAgo(4) }, fitimi: { at: daysAgo(4) }, listepagesa: { at: daysAgo(5) } },
+          5: { sigurime: { at: daysAgo(1) } }
+        }
+      }
+    };
+  }
+
+  /* =====================================================================
+     3. GJENDJA (state) + ruajtja lokale
+     ===================================================================== */
+  let state = normalize(loadState() || mockState());
+
+  function loadState() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch (e) { return null; }
+  }
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* p.sh. dritare private */ }
+  }
+  // Plotëson fushat e reja te gjendjet e ruajtura nga versionet e mëparshme
+  function normalize(st) {
+    st.subjects.forEach(s => {
+      s.portals    = s.portals    || { selfcare: true, cats: true };
+      s.credential = s.credential || null;
+    });
+    return st;
+  }
+
+  /* =====================================================================
+     3b. KASAFORTA E KREDENCIALEVE (versioni pa backend)
+         Fjalëkalimet e e-Albania enkriptohen në browser me AES-256-GCM.
+         Çelësi rrjedh nga një fjalëkalim kryesor (PBKDF2, 310 000 iteracione,
+         salt i rastësishëm) dhe mbahet VETËM në memorie: në localStorage
+         ruhen vetëm salt-i, një vlerë kontrolli dhe tekstet e shifruara.
+         Në prodhim fjalëkalimi dërgohet një herë te serveri (HTTPS), i cili
+         e enkripton me çelësin e tij – shih server/vault.js (në repo).
+     ===================================================================== */
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const b64   = bytes => btoa(String.fromCharCode(...bytes));
+  const unb64 = str   => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+  let vaultKey = null;        // CryptoKey, vetëm në memorie
+  let vaultPending = null;    // { resolve, reject } e kërkesës që pret hapjen e kasafortës
+  let lockTimer, revealTimer;
+
+  const cryptoOk = () => Boolean(window.crypto && crypto.subtle);   // kërkon HTTPS, localhost ose file://
+  function vaultMeta() { try { return JSON.parse(localStorage.getItem(VAULT_STORE)); } catch (e) { return null; } }
+
+  async function deriveKey(passphrase, salt) {
+    const base = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base,
+                                   { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function encryptText(key, text) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));                 // IV i ri për çdo enkriptim
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(text));
+    return { iv: b64(iv), ct: b64(new Uint8Array(ct)) };
+  }
+  async function decryptText(key, rec) {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(rec.iv) }, key, unb64(rec.ct));
+    return dec.decode(pt);
+  }
+
+  // Kthen çelësin; nëse kasaforta është e mbyllur, hap modalin dhe pret përdoruesin
+  function requireVaultKey() {
+    if (!cryptoOk()) { showToast('Enkriptimi kërkon HTTPS ose localhost.', true); return Promise.reject(new Error('no-crypto')); }
+    if (vaultKey) return Promise.resolve(vaultKey);
+    return new Promise((resolve, reject) => {
+      vaultPending = { resolve, reject };
+      openVaultModal(vaultMeta() ? 'unlock' : 'create');
+    });
+  }
+
+  function openVaultModal(mode) {
+    const create = mode === 'create';
+    $('vaultTitle').textContent = create ? 'Krijo fjalëkalimin kryesor' : 'Hap kasafortën';
+    $('vaultText').textContent  = create
+      ? 'Me këtë fjalëkalim kryesor enkriptohen fjalëkalimet e e-Albania të subjekteve. Nuk ruhet askund – nëse e harron, kredencialet duhen rifutur.'
+      : 'Shkruaj fjalëkalimin kryesor për të ruajtur ose shfaqur kredencialet e e-Albania.';
+    $('vaultPass').value = ''; $('vaultPass2').value = '';
+    $('vaultPass2').classList.toggle('hidden', !create);
+    $('vaultError').textContent = '';
+    $('vaultForm').classList.remove('hidden');
+    $('vaultReveal').classList.add('hidden');
+    const modal = $('vaultModal');
+    modal.dataset.mode = mode;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    setTimeout(() => $('vaultPass').focus(), 50);
+  }
+
+  function closeVaultModal(cancelled = true) {
+    const modal = $('vaultModal');
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+    $('vaultRevealValue').value = '';
+    clearTimeout(revealTimer);
+    if (cancelled && vaultPending) { vaultPending.reject(new Error('cancelled')); vaultPending = null; }
+  }
+
+  async function submitVault(e) {
+    e.preventDefault();
+    const pass = $('vaultPass').value;
+    try {
+      if ($('vaultModal').dataset.mode === 'create') {
+        if (pass.length < 8) throw new Error('Fjalëkalimi kryesor duhet të ketë të paktën 8 karaktere.');
+        if (pass !== $('vaultPass2').value) throw new Error('Fjalëkalimet nuk përputhen.');
+        const salt  = crypto.getRandomValues(new Uint8Array(16));
+        const key   = await deriveKey(pass, salt);
+        const check = await encryptText(key, 'TUFA-VAULT-OK');
+        localStorage.setItem(VAULT_STORE, JSON.stringify({ salt: b64(salt), check }));
+        vaultKey = key;
+      } else {
+        const meta = vaultMeta();
+        const key  = await deriveKey(pass, unb64(meta.salt));
+        try { if (await decryptText(key, meta.check) !== 'TUFA-VAULT-OK') throw new Error(); }
+        catch (x) { throw new Error('Fjalëkalimi kryesor është i gabuar.'); }
+        vaultKey = key;
+      }
+      armAutoLock();
+      renderVaultStatus();
+      const pending = vaultPending; vaultPending = null;
+      closeVaultModal(false);
+      if (pending) pending.resolve(vaultKey);
+    } catch (err) {
+      $('vaultError').textContent = err.message || 'Kasaforta nuk u hap.';
+    } finally {
+      $('vaultPass').value = ''; $('vaultPass2').value = '';
+    }
+  }
+
+  function lockVault() { vaultKey = null; clearTimeout(lockTimer); renderVaultStatus(); }
+  function armAutoLock() { clearTimeout(lockTimer); lockTimer = setTimeout(lockVault, 15 * 60 * 1000); }   // mbyllet vetë pas 15 min
+  function renderVaultStatus() {
+    $('vaultStatus').textContent = vaultKey ? 'Kasafortë e hapur' : 'Kasafortë e mbyllur';
+    $('vaultIconOpen').classList.toggle('hidden', !vaultKey);
+    $('vaultIconClosed').classList.toggle('hidden', Boolean(vaultKey));
+  }
+
+  // Shfaq fjalëkalimin e një subjekti për 20 sekonda (kërkon kasafortën e hapur)
+  async function revealPassword(subjectId) {
+    const s = state.subjects.find(x => x.id === subjectId);
+    if (!s || !s.credential) return;
+    let key;
+    try { key = await requireVaultKey(); } catch (e) { return; }
+    let plain;
+    try { plain = await decryptText(key, s.credential); }
+    catch (e) { showToast('Kredenciali nuk hapet me këtë fjalëkalim kryesor.', true); return; }
+
+    $('vaultTitle').textContent = `e-Albania – ${s.name}`;
+    $('vaultText').textContent  = `Përdoruesi: ${s.nipt}. Fjalëkalimi fshihet nga ekrani pas 20 sekondash.`;
+    $('vaultForm').classList.add('hidden');
+    $('vaultReveal').classList.remove('hidden');
+    $('vaultRevealValue').value = plain;
+    const modal = $('vaultModal');
+    modal.dataset.mode = 'reveal';
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    clearTimeout(revealTimer);
+    revealTimer = setTimeout(() => closeVaultModal(false), 20000);
+    // Në prodhim: POST /api/subjects/:id/credentials/reveal → regjistrohet në portal_access_log
+  }
+
+  /* ---------- Ndihmës për muajt ---------- */
+  function pad(n) { return String(n).padStart(2, '0'); }   // deklarim funksioni: i disponueshëm edhe para kësaj rreshti (hoisting)
+  function currentMonthKey() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; }
+  function monthLabel(key)  { const [y, m] = key.split('-').map(Number); return `${MONTHS_SQ[m - 1]} ${y}`; }
+  function periodLabel(key) {                       // periudha tatimore = muaji para muajit të deklarimit
+    const [y, m] = key.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    return `${MONTHS_SQ[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  function fmtShort(iso) {
+    const d = new Date(iso);
+    return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const initials = name => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  /* =====================================================================
+     4. ELEMENTËT E NDËRFAQES
+     ===================================================================== */
+  const $ = id => document.getElementById(id);
+  const ui = {
+    month: $('monthSelect'), search: $('searchInput'), filter: $('filterSelect'),
+    progress: $('progressBox'), matrixHead: $('matrixHead'), matrixBody: $('matrixBody'),
+    registryBody: $('registryBody'), countLabel: $('countLabel'), countLabelReg: $('countLabelReg'),
+    periodLabel: $('periodLabel'), viewMatrica: $('viewMatrica'), viewRegjistri: $('viewRegjistri'),
+    modal: $('modal'), form: $('subjectForm'), toast: $('toast')
+  };
+  let currentView = 'matrica';
+
+  /* =====================================================================
+     5. LOGJIKA E STATUSEVE
+     ===================================================================== */
+  const month = () => ui.month.value;
+
+  function getDecl(subjectId, key) {
+    const m = state.declarations[month()];
+    return m && m[subjectId] ? m[subjectId][key] : undefined;
+  }
+  const isDone = (subjectId, key) => Boolean(getDecl(subjectId, key));
+
+  // Afati i detyrimit për muajin e zgjedhur ka kaluar?
+  function isOverdue(ob) {
+    const [y, m] = month().split('-').map(Number);
+    const lastDay  = new Date(y, m, 0).getDate();
+    const deadline = new Date(y, m - 1, Math.min(ob.deadlineDay, lastDay), 23, 59, 59);
+    return Date.now() > deadline.getTime();
+  }
+
+  // 3. VEPRIM ME NJË BUTON: "Deklaro" -> E përfunduar
+  function declare(subjectId, key) {
+    const m = month();
+    state.declarations[m] = state.declarations[m] || {};
+    state.declarations[m][subjectId] = state.declarations[m][subjectId] || {};
+    state.declarations[m][subjectId][key] = { at: new Date().toISOString() };
+    saveState();
+    // Në prodhim: fetch('/api/declarations', { method: 'POST', body: JSON.stringify({ subjectId, key, month: m }) })
+    renderAll();
+    const s = state.subjects.find(x => x.id === subjectId), o = OBLIGATIONS.find(x => x.key === key);
+    showToast(`${o.label} për ${s.name} u shënua si e përfunduar.`);
+  }
+
+  function undeclare(subjectId, key) {
+    const m = state.declarations[month()];
+    if (m && m[subjectId]) delete m[subjectId][key];
+    saveState();
+    renderAll();
+    showToast('Statusi u kthye në "E papërfunduar".');
+  }
+
+  /* =====================================================================
+     6. PËRMBLEDHJA MUJORE (PROGRESS TRACKER)
+     ===================================================================== */
+  function computeProgress() {
+    const per = OBLIGATIONS.map(o => {
+      const applicable = state.subjects.filter(s => s.obligations.includes(o.key));
+      const done = applicable.filter(s => isDone(s.id, o.key)).length;
+      const total = applicable.length;
+      return { ...o, done, total, pct: total ? Math.round(done / total * 100) : 0 };
+    });
+    const total = per.reduce((a, p) => a + p.total, 0);
+    const done  = per.reduce((a, p) => a + p.done, 0);
+    return { per, total, done, pct: total ? Math.round(done / total * 100) : 0 };
+  }
+
+  function renderProgress() {
+    const p = computeProgress();
+    const barColor = pct => pct === 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-600' : 'bg-amber-500';
+    ui.progress.innerHTML = `
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Progresi i muajit — ${monthLabel(month())}</h2>
+          <p class="text-sm text-slate-500">Ke përfunduar <span class="font-semibold text-slate-800">${p.done} nga ${p.total}</span> deklarime për ${state.subjects.length} NIPT-e</p>
+        </div>
+        <span class="text-3xl font-bold ${p.pct === 100 ? 'text-green-600' : 'text-blue-700'}">${p.pct}%</span>
+      </div>
+      <div class="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow="${p.pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="h-full rounded-full ${p.pct === 100 ? 'bg-green-500' : 'bg-blue-600'} transition-all duration-500" style="width:${p.pct}%"></div>
+      </div>
+      <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        ${p.per.map(o => {
+          const active = ui.filter.value === 'missing:' + o.key;
+          return `
+            <button type="button" data-filter="missing:${o.key}"
+                    class="rounded-xl border p-3 text-left transition ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'}">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">${o.label}</p>
+                <span class="text-sm font-bold ${o.pct === 100 ? 'text-green-600' : 'text-slate-800'}">${o.pct}%</span>
+              </div>
+              <p class="mt-1 text-sm text-slate-700">Ke deklaruar për <span class="font-semibold">${o.done} nga ${o.total}</span> NIPT-e</p>
+              <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div class="h-full rounded-full ${barColor(o.pct)} transition-all duration-500" style="width:${o.pct}%"></div>
+              </div>
+              <p class="mt-1.5 text-[11px] text-slate-400">${active ? 'Filtri aktiv · kliko për ta hequr' : 'Kliko për të parë të papërfunduarat'}</p>
+            </button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  /* =====================================================================
+     7. KËRKIMI DHE FILTRIMI
+     ===================================================================== */
+  function visibleSubjects() {
+    const q = ui.search.value.trim().toUpperCase();
+    const f = ui.filter.value;
+    return state.subjects.filter(s => {
+      if (q && !(s.nipt.includes(q) || s.name.toUpperCase().includes(q) || s.admin.toUpperCase().includes(q))) return false;
+      if (currentView !== 'matrica') return true;                 // filtri i statuseve vlen vetëm për matricën
+      if (f.startsWith('missing:')) {                             // p.sh. "Pa TVSH të dorëzuar këtë muaj"
+        const key = f.slice(8);
+        return s.obligations.includes(key) && !isDone(s.id, key);
+      }
+      if (f === 'incomplete') return s.obligations.some(k => !isDone(s.id, k));
+      if (f === 'complete')   return s.obligations.length > 0 && s.obligations.every(k => isDone(s.id, k));
+      return true;
+    });
+  }
+
+  /* =====================================================================
+     8. MATRICA E DEKLARIMEVE
+     ===================================================================== */
+  function renderMatrixHead() {
+    ui.matrixHead.innerHTML = `
+      <tr>
+        <th class="th sticky-col w-80 pl-6">Subjekti / NIPT</th>
+        ${OBLIGATIONS.map(o => `
+          <th class="th text-center">
+            ${o.label}${o.note ? `<span class="block text-[10px] font-normal normal-case text-slate-400">(${o.note})</span>` : ''}
+            <span class="block text-[10px] font-normal normal-case ${isOverdue(o) ? 'text-red-500' : 'text-slate-400'}">afati: deri më ${o.deadlineDay}</span>
+          </th>`).join('')}
+        <th class="th text-center">Progresi</th>
+        <th class="th pr-6 text-right">Veprime</th>
+      </tr>`;
+  }
+
+  function cellHtml(s, o) {
+    if (!s.obligations.includes(o.key)) {
+      return `<td class="px-3 py-3 text-center"><span class="text-slate-300" title="Nuk aplikohet për këtë subjekt">—</span></td>`;
+    }
+    const rec = getDecl(s.id, o.key);
+    if (rec) {                                             // E PËRFUNDUAR (e gjelbër)
+      return `
+        <td class="px-3 py-3 text-center">
+          <div class="inline-flex items-center gap-1">
+            <span class="chip chip-done" title="Deklaruar më ${fmtShort(rec.at)}">✓ E përfunduar</span>
+            <button type="button" class="icon-btn p-1" data-action="undo" data-id="${s.id}" data-key="${o.key}" title="Kthe në të papërfunduar" aria-label="Kthe në të papërfunduar">
+              <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
+            </button>
+          </div>
+          <p class="mt-1 text-[11px] text-slate-400">${fmtShort(rec.at)}</p>
+        </td>`;
+    }
+    const late = isOverdue(o);                             // E PAPËRFUNDUAR (gri ose e kuqe nëse ka kaluar afati)
+    return `
+      <td class="px-3 py-3 text-center">
+        <button type="button" class="btn-declare ${late ? 'btn-declare-late' : ''}" data-action="declare" data-id="${s.id}" data-key="${o.key}">
+          <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+          Deklaro
+        </button>
+        <p class="mt-1 text-[11px] ${late ? 'font-medium text-red-600' : 'text-slate-400'}">${late ? 'E papërfunduar · vonë' : 'E papërfunduar'}</p>
+      </td>`;
+  }
+
+  function renderMatrix() {
+    renderMatrixHead();
+    ui.periodLabel.textContent = periodLabel(month());
+    const rows = visibleSubjects();
+    ui.countLabel.textContent = `Duke shfaqur ${rows.length} nga ${state.subjects.length} subjekte`;
+
+    if (!rows.length) {
+      ui.matrixBody.innerHTML = `<tr><td colspan="${OBLIGATIONS.length + 3}" class="px-6 py-12 text-center text-sm text-slate-500">Asnjë subjekt nuk përputhet me kërkimin ose filtrin.</td></tr>`;
+      return;
+    }
+
+    ui.matrixBody.innerHTML = rows.map(s => {
+      const total = s.obligations.length;
+      const done  = s.obligations.filter(k => isDone(s.id, k)).length;
+      const pct   = total ? Math.round(done / total * 100) : 0;
+      const complete = total > 0 && done === total;
+      return `
+        <tr class="hover:bg-slate-50 ${complete ? 'row-complete' : ''}">
+          <td class="sticky-col px-3 py-3 pl-6">
+            <div class="flex items-center gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">${esc(initials(s.name))}</div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-slate-800">${esc(s.name)}</p>
+                <p class="truncate text-xs text-slate-500"><span class="font-mono">${esc(s.nipt)}</span> · ${esc(s.admin)}</p>
+              </div>
+              <span class="${s.credential ? 'text-green-500' : 'text-slate-300'}" title="${s.credential ? 'Kredencialet e e-Albania: të ruajtura' : 'Kredencialet e e-Albania mungojnë'}">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
+              </span>
+              <span class="chip ${PKG_CLASS[s.package] || 'chip-pkg-baze'}">${esc(s.package)}</span>
+            </div>
+          </td>
+          ${OBLIGATIONS.map(o => cellHtml(s, o)).join('')}
+          <td class="px-3 py-3">
+            <p class="text-center text-xs font-semibold ${complete ? 'text-green-600' : 'text-slate-700'}">${done}/${total}</p>
+            <div class="mx-auto mt-1 h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full ${complete ? 'bg-green-500' : 'bg-blue-600'}" style="width:${pct}%"></div>
+            </div>
+          </td>
+          <td class="whitespace-nowrap px-3 py-3 pr-6 text-right">
+            <button type="button" class="icon-btn" data-action="edit" data-id="${s.id}" title="Modifiko" aria-label="Modifiko">
+              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+            </button>
+            <button type="button" class="icon-btn hover:bg-red-50 hover:text-red-600" data-action="delete" data-id="${s.id}" title="Fshi" aria-label="Fshi">
+              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* =====================================================================
+     9. REGJISTRI I SUBJEKTEVE
+     ===================================================================== */
+  function renderRegistry() {
+    const rows = visibleSubjects();
+    ui.countLabelReg.textContent = `${rows.length} nga ${state.subjects.length} subjekte`;
+    if (!rows.length) {
+      ui.registryBody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-sm text-slate-500">Asnjë subjekt nuk përputhet me kërkimin.</td></tr>`;
+      return;
+    }
+    ui.registryBody.innerHTML = rows.map(s => {
+      const portalLinks = Object.entries(PORTALS)
+        .filter(([k]) => s.portals[k])
+        .map(([k, p]) => `<a href="${p.url}" target="_blank" rel="noopener" class="chip chip-ob transition hover:border-blue-400 hover:text-blue-700" title="${p.title}">${p.label} ↗</a>`)
+        .join('');
+      return `
+      <tr class="hover:bg-slate-50">
+        <td class="px-3 py-3 pl-6">
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">${esc(initials(s.name))}</div>
+            <p class="font-semibold text-slate-800">${esc(s.name)}</p>
+          </div>
+        </td>
+        <td class="px-3 py-3 font-mono text-slate-700">${esc(s.nipt)}</td>
+        <td class="px-3 py-3 text-slate-700">${esc(s.admin)}</td>
+        <td class="px-3 py-3"><span class="chip ${PKG_CLASS[s.package] || 'chip-pkg-baze'}">${esc(s.package)}</span></td>
+        <td class="px-3 py-3">
+          <div class="flex items-center gap-2">
+            ${s.credential
+              ? `<span class="chip chip-done" title="Fjalëkalimi u ruajt i enkriptuar më ${fmtShort(s.credential.updatedAt)}">✓ fjalëkalim i ruajtur</span>
+                 <button type="button" class="text-xs font-medium text-blue-700 hover:underline" data-action="reveal" data-id="${s.id}">Shfaq</button>`
+              : `<span class="chip chip-late" title="Shto fjalëkalimin e e-Albania te Modifiko">fjalëkalimi mungon</span>`}
+          </div>
+          <div class="mt-1.5 flex flex-wrap gap-1">${portalLinks || '<span class="text-xs text-slate-400">Asnjë portal</span>'}</div>
+        </td>
+        <td class="px-3 py-3">
+          <div class="flex flex-wrap gap-1">
+            ${s.obligations.length
+              ? OBLIGATIONS.filter(o => s.obligations.includes(o.key)).map(o => `<span class="chip chip-ob">${o.short}</span>`).join('')
+              : '<span class="text-xs text-slate-400">Asnjë</span>'}
+          </div>
+        </td>
+        <td class="whitespace-nowrap px-3 py-3 pr-6 text-right">
+          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" data-action="sync" data-id="${s.id}" ${s.credential ? '' : 'disabled title="Ruaj fillimisht fjalëkalimin e e-Albania"'}>Sinkronizo</button>
+          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" data-action="edit" data-id="${s.id}">Modifiko</button>
+          <button type="button" class="btn-secondary px-3 py-1.5 text-xs text-red-600 hover:bg-red-50" data-action="delete" data-id="${s.id}">Fshi</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // "Sinkronizo": në prodhim krijon një job (POST /api/sync-jobs) që worker-i e kryen në server,
+  // duke hyrë në e-Albania me kredencialet e dekriptuara aty – browser-i nuk i sheh kurrë.
+  function syncSubject(id) {
+    const s = state.subjects.find(x => x.id === id);
+    if (!s || !s.credential) return;
+    const portals = Object.keys(PORTALS).filter(k => s.portals[k]).map(k => PORTALS[k].label).join(' + ') || 'asnjë portal';
+    showToast(`Kërkesa e sinkronizimit (${portals}) për ${s.name} u regjistrua – në demo nuk ka backend.`);
+  }
+
+  /* =====================================================================
+     10. SHTO / MODIFIKO / FSHI SUBJEKT (CRUD)
+     ===================================================================== */
+  let removePassFlag = false;   // "Hiq fjalëkalimin e ruajtur" u klikua në formën e hapur
+
+  function openSubjectForm(id = null) {
+    const s = id ? state.subjects.find(x => x.id === id) : null;
+    $('modalTitle').textContent = s ? 'Modifiko Subjektin' : 'Shto Subjekt';
+    $('fId').value      = s ? s.id : '';
+    $('fName').value    = s ? s.name : '';
+    $('fNipt').value    = s ? s.nipt : '';
+    $('fAdmin').value   = s ? s.admin : '';
+    $('fPackage').value = s ? s.package : 'Standard';
+
+    // Aksesi në portalet (e-Albania)
+    removePassFlag = false;
+    $('fUser').value = s ? s.nipt : '';
+    $('fPass').value = '';
+    $('fPass').type  = 'password';
+    $('fPass').placeholder = s && s.credential
+      ? `•••••••• (i ruajtur më ${fmtShort(s.credential.updatedAt)}) – lëre bosh për ta mbajtur`
+      : 'Fjalëkalimi i llogarisë e-Albania';
+    $('passHint').textContent = 'Ruhet i enkriptuar (AES-256-GCM); nuk shfaqet më pa fjalëkalimin kryesor.';
+    $('btnRemovePass').classList.toggle('hidden', !(s && s.credential));
+    $('fSelfcare').checked = s ? Boolean(s.portals.selfcare) : true;
+    $('fCats').checked     = s ? Boolean(s.portals.cats)     : true;
+    $('fObligations').innerHTML = OBLIGATIONS.map(o => `
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" name="obligation" value="${o.key}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+               ${(s ? s.obligations : ALL_KEYS).includes(o.key) ? 'checked' : ''}>
+        ${o.label}
+      </label>`).join('');
+    ui.form.querySelectorAll('.error-msg').forEach(e => { e.textContent = ''; });
+    ui.form.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
+    ui.modal.classList.remove('hidden');
+    ui.modal.classList.add('flex');
+    setTimeout(() => $('fName').focus(), 50);
+  }
+
+  function closeModal() {
+    ui.modal.classList.add('hidden');
+    ui.modal.classList.remove('flex');
+  }
+
+  function setError(input, msg) {
+    const box = document.querySelector(`[data-error-for="${input.id}"]`);
+    input.classList.toggle('input-error', Boolean(msg));
+    if (box) box.textContent = msg || '';
+  }
+
+  async function saveSubject(e) {
+    e.preventDefault();
+    const id    = Number($('fId').value) || null;
+    const name  = $('fName').value.trim();
+    const nipt  = $('fNipt').value.trim().toUpperCase();
+    const admin = $('fAdmin').value.trim();
+    const pkg   = $('fPackage').value;
+    const obligations = Array.from(ui.form.querySelectorAll('input[name="obligation"]:checked')).map(c => c.value);
+    const portals  = { selfcare: $('fSelfcare').checked, cats: $('fCats').checked };
+    const password = $('fPass').value;
+
+    let ok = true;
+    setError($('fName'),  name  ? '' : 'Shkruani emrin e subjektit.');          ok = ok && Boolean(name);
+    setError($('fAdmin'), admin ? '' : 'Shkruani emrin e administratorit.');    ok = ok && Boolean(admin);
+    if (!NIPT_RE.test(nipt)) { setError($('fNipt'), 'NIPT-i duhet të ketë formatin L21234567A.'); ok = false; }
+    else if (state.subjects.some(s => s.nipt === nipt && s.id !== id)) { setError($('fNipt'), 'Ky NIPT ekziston tashmë në regjistër.'); ok = false; }
+    else setError($('fNipt'), '');
+    if (!ok) return;
+
+    // Kredencialet: mbahen ato ekzistuese, hiqen ose zëvendësohen me fjalëkalimin e ri të enkriptuar
+    const existing = id ? state.subjects.find(s => s.id === id) : null;
+    let credential = existing ? existing.credential : null;
+    if (removePassFlag) credential = null;
+    if (password) {
+      let key;
+      try { key = await requireVaultKey(); }
+      catch (x) { showToast('Fjalëkalimi nuk u ruajt: kasaforta nuk u hap.', true); return; }
+      const rec = await encryptText(key, password);          // vetëm teksti i shifruar ruhet
+      credential = { username: nipt, iv: rec.iv, ct: rec.ct, updatedAt: new Date().toISOString() };
+      $('fPass').value = '';
+      // Në prodhim: PUT /api/subjects/:id/credentials { password, usesSelfcare, usesCats } – një herë, mbi HTTPS
+    }
+    if (credential) credential.username = nipt;             // përdoruesi i e-Albania = NIPT-i aktual
+
+    if (existing) {
+      Object.assign(existing, { name, nipt, admin, package: pkg, obligations, portals, credential });
+      showToast(`Subjekti ${name} u përditësua.${password ? ' Fjalëkalimi u ruajt i enkriptuar.' : ''}`);
+    } else {
+      const newId = state.subjects.reduce((m, s) => Math.max(m, s.id), 0) + 1;
+      state.subjects.push({ id: newId, name, nipt, admin, package: pkg, obligations, portals, credential });
+      showToast(`Subjekti ${name} u shtua në regjistër.${password ? ' Fjalëkalimi u ruajt i enkriptuar.' : ''}`);
+    }
+    // Në prodhim: POST /api/subjects ose PUT /api/subjects/:id (pa fjalëkalimin – ai shkon te rruga e kredencialeve)
+    saveState();
+    closeModal();
+    renderAll();
+  }
+
+  function deleteSubject(id) {
+    const s = state.subjects.find(x => x.id === id);
+    if (!s) return;
+    if (!confirm(`Fshi subjektin "${s.name}" (${s.nipt})?\nStatuset e deklarimeve të tij do të fshihen gjithashtu.`)) return;
+    state.subjects = state.subjects.filter(x => x.id !== id);
+    Object.values(state.declarations).forEach(m => { delete m[id]; });
+    // Në prodhim: DELETE /api/subjects/:id
+    saveState();
+    renderAll();
+    showToast(`Subjekti ${s.name} u fshi.`);
+  }
+
+  /* =====================================================================
+     11. EKSPORTIMI NË CSV (matrica e muajit, me filtrat aktualë)
+     ===================================================================== */
+  function exportCsv() {
+    const header = ['Subjekti', 'NIPT', 'Administratori', 'Paketa', ...OBLIGATIONS.map(o => o.label), 'Progresi'];
+    const rows = visibleSubjects().map(s => {
+      const done = s.obligations.filter(k => isDone(s.id, k)).length;
+      return [s.name, s.nipt, s.admin, s.package,
+        ...OBLIGATIONS.map(o => !s.obligations.includes(o.key) ? 'N/A' : isDone(s.id, o.key) ? 'E përfunduar' : 'E papërfunduar'),
+        `${done}/${s.obligations.length}`];
+    });
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });   // BOM që Excel të lexojë ë/ç
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `matrica-deklarimeve-${month()}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* =====================================================================
+     12. PAMJET, NGJARJET DHE NISJA
+     ===================================================================== */
+  function showView(view) {
+    currentView = view;
+    ui.viewMatrica.classList.toggle('hidden', view !== 'matrica');
+    ui.viewRegjistri.classList.toggle('hidden', view !== 'regjistri');
+    ui.filter.classList.toggle('hidden', view !== 'matrica');
+    $('btnExport').classList.toggle('hidden', view !== 'matrica');
+    document.querySelectorAll('[data-view]').forEach(el => {
+      const active = el.dataset.view === view;
+      if (el.classList.contains('tab'))      el.classList.toggle('tab-active', active);
+      if (el.classList.contains('nav-link')) el.classList.toggle('nav-active', active);
+    });
+    renderAll();
+  }
+
+  function renderAll() {
+    renderProgress();
+    renderMatrix();
+    renderRegistry();
+  }
+
+  // Muajt e zgjedhshëm: 12 muajt e fundit
+  (function fillMonths() {
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      ui.month.add(new Option(monthLabel(key), key));
+    }
+    ui.month.value = currentMonthKey();
+  })();
+
+  // Opsionet e filtrit "Pa X të dorëzuar këtë muaj"
+  OBLIGATIONS.forEach(o => ui.filter.add(new Option(`Pa ${o.label} të dorëzuar këtë muaj`, 'missing:' + o.key)));
+
+  // Kërkimi, filtri, muaji
+  ui.search.addEventListener('input', () => { renderMatrix(); renderRegistry(); });
+  ui.filter.addEventListener('change', () => { renderProgress(); renderMatrix(); });
+  ui.month.addEventListener('change', renderAll);
+
+  // Klikimi te kartat e progresit = filtër i shpejtë
+  ui.progress.addEventListener('click', e => {
+    const tile = e.target.closest('[data-filter]');
+    if (!tile) return;
+    ui.filter.value = ui.filter.value === tile.dataset.filter ? 'all' : tile.dataset.filter;
+    if (currentView !== 'matrica') showView('matrica'); else { renderProgress(); renderMatrix(); }
+  });
+
+  // Veprimet brenda tabelave (delegim ngjarjesh)
+  function onTableClick(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    switch (btn.dataset.action) {
+      case 'declare': declare(id, btn.dataset.key);   break;
+      case 'undo':    undeclare(id, btn.dataset.key); break;
+      case 'edit':    openSubjectForm(id);            break;
+      case 'delete':  deleteSubject(id);              break;
+      case 'reveal':  revealPassword(id);             break;
+      case 'sync':    syncSubject(id);                break;
+    }
+  }
+  ui.matrixBody.addEventListener('click', onTableClick);
+  ui.registryBody.addEventListener('click', onTableClick);
+
+  // Pamjet (tabs + sidebar)
+  document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', e => {
+    e.preventDefault();
+    showView(el.dataset.view);
+    if (!backdrop.classList.contains('hidden')) toggleMenu();
+  }));
+
+  // Modali
+  $('btnAdd').addEventListener('click', () => openSubjectForm());
+  $('btnModalClose').addEventListener('click', closeModal);
+  $('btnModalCancel').addEventListener('click', closeModal);
+  ui.modal.addEventListener('click', e => { if (e.target === ui.modal) closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!$('vaultModal').classList.contains('hidden')) closeVaultModal(true); else closeModal();
+  });
+  ui.form.addEventListener('submit', saveSubject);
+  ui.form.addEventListener('input', e => { if (e.target.id) setError(e.target, ''); });
+  $('fNipt').addEventListener('input', () => {
+    $('fNipt').value = $('fNipt').value.toUpperCase().replace(/\s/g, '');
+    $('fUser').value = $('fNipt').value;                      // përdoruesi i e-Albania = NIPT-i
+  });
+  $('btnTogglePass').addEventListener('click', () => { const p = $('fPass'); p.type = p.type === 'password' ? 'text' : 'password'; });
+  $('btnRemovePass').addEventListener('click', () => {
+    removePassFlag = true;
+    $('btnRemovePass').classList.add('hidden');
+    $('passHint').textContent = 'Fjalëkalimi i ruajtur do të fshihet kur të ruash subjektin.';
+  });
+
+  // Kasaforta
+  $('vaultForm').addEventListener('submit', submitVault);
+  $('vaultCancel').addEventListener('click', () => closeVaultModal(true));
+  $('vaultClose').addEventListener('click',  () => closeVaultModal(false));
+  $('vaultModal').addEventListener('click', e => { if (e.target === $('vaultModal')) closeVaultModal(true); });
+  $('vaultCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('vaultRevealValue').value); showToast('U kopjua. Pastro clipboard-in pasi ta përdorësh.'); }
+    catch (e) { $('vaultRevealValue').select(); }
+  });
+  $('btnVault').addEventListener('click', () => {
+    if (vaultKey) { lockVault(); showToast('Kasaforta u mbyll.'); }
+    else requireVaultKey().then(() => showToast('Kasaforta u hap për 15 minuta.')).catch(() => {});
+  });
+  renderVaultStatus();
+
+  // Eksporti dhe rivendosja e mocks
+  $('btnExport').addEventListener('click', exportCsv);
+  $('btnReset').addEventListener('click', () => {
+    if (!confirm('Rivendos 5 subjektet testuese dhe statuset e tyre?')) return;
+    state = mockState();
+    saveState();
+    ui.search.value = ''; ui.filter.value = 'all';
+    renderAll();
+    showToast('Të dhënat testuese u rivendosën.');
+  });
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    ui.toast.textContent = msg;
+    ui.toast.classList.toggle('bg-red-600',   isError);
+    ui.toast.classList.toggle('bg-slate-900', !isError);
+    ui.toast.classList.remove('opacity-0', 'translate-y-4');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => ui.toast.classList.add('opacity-0', 'translate-y-4'), 3000);
+  }
+
+  /* ---------- Menyja në mobile ---------- */
+  const sidebar  = $('sidebar');
+  const backdrop = $('backdrop');
+  const toggleMenu = () => {
+    sidebar.classList.toggle('-translate-x-full');
+    backdrop.classList.toggle('hidden');
+  };
+  $('menuBtn').addEventListener('click', toggleMenu);
+  backdrop.addEventListener('click', toggleMenu);
+
+  /* ---------- Nisja ---------- */
+  renderAll();
+</script>
+</body>
+</html>
