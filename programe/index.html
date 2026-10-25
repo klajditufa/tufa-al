@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Programet — TUFA</title>
+  <meta name="description" content="Shkarkimi i programeve të TUFA Consult për klientët. Kërkohet kodi i shkarkimit.">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://apps.tufa.al/assets/site.css">
+  <link rel="icon" href="https://apps.tufa.al/assets/favicon.svg" type="image/svg+xml">
+  <style>
+    .gate { border: 1px solid var(--line); border-radius: 12px; background: var(--stone); padding: 22px 24px; max-width: 560px; }
+    .gate label { display: block; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+    .gate .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .gate input { flex: 1 1 220px; font: inherit; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); }
+    .gate input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+    .btn { cursor: pointer; font-family: inherit; }
+    .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .msg { min-height: 1.6em; margin: 10px 0 0; font-size: 0.95rem; font-weight: 600; }
+    .msg.err { color: #b42318; }
+    .msg.ok { color: var(--green); }
+    .open { display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .unlocked .open { display: flex; }
+    .unlocked .closed { display: none; }
+    .list { margin: 34px 0 60px; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; padding: 22px 0; border-top: 1px solid var(--line); }
+    .item:last-child { border-bottom: 1px solid var(--line); }
+    .item h3 { margin: 0 0 2px; }
+    .item p { margin: 0; color: var(--muted); font-size: 0.97rem; }
+    .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .tags span { font-size: 0.78rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--blue-soft); color: var(--ink); }
+    .empty { padding: 34px 24px; border: 1.5px dashed var(--line); border-radius: 12px; color: var(--muted); text-align: center; }
+    @media (max-width: 560px) { .item { grid-template-columns: 1fr; } .item .btn { justify-content: center; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="https://apps.tufa.al/"><span class="mark">T</span> TUFA Apps</a>
+      <nav>
+        <a href="./" aria-current="page">Programet</a>
+        <a href="https://apps.tufa.al/flota/">Flota</a>
+        <a href="mailto:info@tufa.consulting">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap" style="grid-template-columns: 1fr; gap: 0;">
+      <div>
+        <h1>Programet për shkarkim</h1>
+        <p class="lead" style="max-width: 52ch;">Programet e TUFA Consult për klientët tanë. Për të shkarkuar, vendos kodin që të kemi dhënë.</p>
+
+        <form class="gate" id="gate" autocomplete="off">
+          <div class="closed">
+            <label for="kodi">Kodi i shkarkimit</label>
+            <div class="row">
+              <input id="kodi" name="kodi" required maxlength="64" spellcheck="false" autocapitalize="characters" aria-describedby="msg">
+              <button class="btn primary" type="submit" id="hap">Hap shkarkimet</button>
+            </div>
+          </div>
+          <div class="open">
+            <span class="msg ok" style="margin:0">✓ Kodi u pranua — mund të shkarkosh.</span>
+            <button class="btn" type="button" id="dil">Mbyll</button>
+          </div>
+          <p class="msg" id="msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="list" id="list" aria-busy="true"><p class="muted">Po ngarkohen programet…</p></div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© <span id="viti"></span> TUFA Consult · Fushë-Krujë, Shqipëri</span>
+      <a href="tel:+355696052163">+355 69 60 52 163</a>
+      <a href="mailto:info@tufa.consulting">info@tufa.consulting</a>
+      <span>Nuk ke kod? Na shkruaj ose telefono.</span>
+    </div>
+  </footer>
+
+  <script>
+    const API = 'https://pdvfqddtmfsxhmqlxpfr.supabase.co/functions/v1/programe';
+    const $ = (id) => document.getElementById(id);
+    const gate = $('gate'), msg = $('msg'), list = $('list');
+    let kodi = null;
+    $('viti').textContent = new Date().getFullYear();
+
+    function ruaj(k) { try { k ? sessionStorage.setItem('tufa-programe-kodi', k) : sessionStorage.removeItem('tufa-programe-kodi'); } catch (e) {} }
+    function lexo() { try { return sessionStorage.getItem('tufa-programe-kodi'); } catch (e) { return null; } }
+
+    async function thirr(body) {
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let d = {}; try { d = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(d.gabim || 'Diçka nuk shkoi. Provo përsëri.');
+      return d;
+    }
+    function shfaq(text, lloji) { msg.textContent = text || ''; msg.className = 'msg' + (lloji ? ' ' + lloji : ''); }
+    function gjendja(hapur) {
+      gate.classList.toggle('unlocked', hapur);
+      document.querySelectorAll('[data-id]').forEach((b) => { b.disabled = !hapur; });
+    }
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    async function ngarkoListen() {
+      try {
+        const { programe } = await thirr({ veprimi: 'lista' });
+        if (!programe.length) {
+          list.innerHTML = '<div class="empty"><strong>Ende s\'ka programe për shkarkim.</strong><br>Së shpejti do të shtohen këtu.</div>';
+        } else {
+          list.innerHTML = programe.map((p) => `
+            <article class="item">
+              <div>
+                <h3>${esc(p.emri)}</h3>
+                ${p.pershkrimi ? `<p>${esc(p.pershkrimi)}</p>` : ''}
+                <div class="tags">
+                  <span>${esc(p.platforma)}</span>
+                  ${p.versioni ? `<span>v${esc(p.versioni)}</span>` : ''}
+                  ${p.madhesia_mb ? `<span>${esc(p.madhesia_mb)} MB</span>` : ''}
+                </div>
+              </div>
+              <button class="btn primary" type="button" data-id="${esc(p.id)}" disabled>Shkarko</button>
+            </article>`).join('');
+        }
+      } catch (e) {
+        list.innerHTML = '<div class="empty">Lista nuk u ngarkua. Rifresko faqen pas pak.</div>';
+      }
+      list.setAttribute('aria-busy', 'false');
+      gjendja(!!kodi);
+    }
+
+    gate.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const k = $('kodi').value.trim();
+      if (!k) return;
+      const b = $('hap'); b.disabled = true; shfaq('Po kontrollohet…');
+      try {
+        await thirr({ veprimi: 'verifiko', kodi: k });
+        kodi = k; ruaj(k); shfaq(''); gjendja(true);
+      } catch (err) { shfaq(err.message, 'err'); $('kodi').select(); }
+      b.disabled = false;
+    });
+
+    $('dil').addEventListener('click', () => { kodi = null; ruaj(null); $('kodi').value = ''; shfaq(''); gjendja(false); $('kodi').focus(); });
+
+    list.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-id]');
+      if (!b || !kodi) return;
+      const tekst = b.textContent; b.disabled = true; b.textContent = 'Po përgatitet…';
+      try {
+        const { url } = await thirr({ veprimi: 'shkarko', kodi, id: b.dataset.id });
+        window.location.href = url;
+        b.textContent = 'U nis shkarkimi';
+        setTimeout(() => { b.textContent = tekst; b.disabled = false; }, 4000);
+      } catch (err) {
+        shfaq(err.message, 'err'); b.textContent = tekst; b.disabled = false;
+        if (/kodi/i.test(err.message)) { kodi = null; ruaj(null); gjendja(false); }
+      }
+    });
+
+    kodi = lexo();
+    ngarkoListen();
+  </script>
+</body>
+</html>
