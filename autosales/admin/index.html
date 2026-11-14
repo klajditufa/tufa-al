@@ -297,7 +297,7 @@ function afterChange(){
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act;
   if(act==='login')return doLogin();
-  if(act==='logout'){try{await SB.auth.signOut()}catch(x){}location.reload();return}
+  if(act==='logout'){try{await SB.auth.signOut({scope:'local'})}catch(x){}clearLocalSession();location.reload();return}
   if(act==='reload'){b.disabled=true;await load();render();return}
   if(act==='filter'){S.filter=b.dataset.f;render();return}
   if(act==='open'){S.open=b.dataset.id;S.dErr='';S.dMsg='';S.delAsk=null;openDialog(true);return}
@@ -316,6 +316,7 @@ document.addEventListener('keydown',e=>{
   else if(e.target.matches&&e.target.matches('[data-act=open]')){S.open=e.target.dataset.id;S.dErr='';S.dMsg='';openDialog(true)}
 });
 
+function clearLocalSession(){try{Object.keys(localStorage).filter(k=>/^sb-.*-auth-token/.test(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}}
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
 (async()=>{
   const cfg=window.AUTOSALES_CONFIG;
