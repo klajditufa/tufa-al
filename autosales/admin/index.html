@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AutoSales ERP · Admin</title>
+<title>TUFA AutoSales ERP · Admin</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0b5c6b">
 <link rel="icon" href="../icon-192.png">
@@ -135,7 +135,8 @@ function render(){
   const app=$('#app');
   if(S.view==='boot'){app.innerHTML='<div class="center muted">Po ngarkohet…</div>';return}
   if(S.view==='login'){app.innerHTML=`<div class="center">
-    <div class="brand"><h1>AutoSales ERP · Admin</h1><span>Hyr me llogarinë e administratorit</span></div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="../logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="brand" style="text-align:center"><span>Admin · hyr me llogarinë e administratorit</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.mail)}"></div>
       <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="current-password"></div>

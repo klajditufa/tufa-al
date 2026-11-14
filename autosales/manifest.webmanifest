@@ -1,12 +1,12 @@
 {
-  "name": "AutoSales ERP",
+  "name": "TUFA AutoSales ERP",
   "short_name": "AutoSales",
   "description": "Import dhe shitje automjetesh: blerje nga fleta doganore, kosto, shitje, kontratë dhe raporte.",
   "lang": "sq",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#eef1f3",
+  "background_color": "#ffffff",
   "theme_color": "#0b5c6b",
   "icons": [
     {
