@@ -185,12 +185,13 @@ const queues={};
 /* Abonimi (vetëm kur programi rri në server): pas afatit kompania mbetet vetëm për lexim. */
 function subDays(){const e=S.sub&&S.sub.expires_on;if(!e)return null;const a=new Date(e+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);return Math.round((a-n)/864e5)}
 function subExpired(){const d=subDays();return d!==null&&d<0}
+const SUB_CONTACT='<a href="https://tufa.al" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">tufa.al</a> ose <a href="tel:+355696052163" style="color:var(--accent);font-weight:600;white-space:nowrap">+355 69 605 2163</a>';
 const SUB_RO='Abonimi ka skaduar. Programi është vetëm për lexim.';
 function subBanner(){
   const d=subDays();if(d===null||S.view==='login')return '';
   if(d<0)return `<div class="card" style="border-color:var(--bad);color:var(--bad)"><b>Abonimi skadoi më ${dmy(S.sub.expires_on)}.</b>
-    <div class="small" style="color:var(--ink);margin-top:4px">Të dhënat mund t'i shohësh dhe t'i eksportosh, por nuk mund të shtosh, ndryshosh apo skanosh. Për ta rinovuar, kontakto TUFA Consult.</div></div>`;
-  if(d<=14&&S.view==='list')return `<div class="card small" style="border-color:var(--warn)"><b style="color:var(--warn)">${d===0?'Abonimi skadon sot.':'Abonimi skadon për '+d+' ditë'+(d===0?'':' (më '+dmy(S.sub.expires_on)+').')}</b> Për ta rinovuar, kontakto TUFA Consult.</div>`;
+    <div class="small" style="color:var(--ink);margin-top:4px">Të dhënat mund t'i shohësh dhe t'i eksportosh, por nuk mund të shtosh, ndryshosh apo skanosh. Për ta rinovuar, kontakto ${SUB_CONTACT}.</div></div>`;
+  if(d<=14&&S.view==='list')return `<div class="card small" style="border-color:var(--warn)"><b style="color:var(--warn)">${d===0?'Abonimi skadon sot.':'Abonimi skadon për '+d+' ditë'+(d===0?'':' (më '+dmy(S.sub.expires_on)+').')}</b> Për ta rinovuar, kontakto ${SUB_CONTACT}.</div>`;
   return '';
 }
 function save(v){
@@ -597,7 +598,7 @@ function viewCompany(){
     ${S.sub.plan?`<div><span>Plani</span><span>${esc(S.sub.plan)}</span></div>`:''}
     ${S.sub.price!=null?`<div><span>Çmimi</span><span>${fmt(num(S.sub.price),0)} ${S.sub.currency==='ALL'?'L':S.sub.currency==='EUR'?'€':esc(S.sub.currency||'')}${/vjet/i.test(S.sub.plan||'')?' në vit':/muj/i.test(S.sub.plan||'')?' në muaj':''}</span></div>`:''}
     <div><span>Vlen deri më</span><span ${subExpired()?'style="color:var(--bad)"':''}>${S.sub.expires_on?dmy(S.sub.expires_on):'pa afat'}</span></div></div>
-    <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto TUFA Consult.'}</div></div>`:''}
+    <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto '+SUB_CONTACT+'.'}</div></div>`:''}
   ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
     ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
     <div class="grid2">
