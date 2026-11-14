@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AutoSales ERP · Admin</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b5c6b">
+<link rel="icon" href="../icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Paneli i administratorit: i gjerë në kompjuter (tabelë), me karta në telefon. Të njëjtat ngjyra si programi. */
+:root{
+  --bg:#eef1f3; --surface:#ffffff; --ink:#14232b; --muted:#5d6d76; --line:#d5dce0;
+  --accent:#0b5c6b; --accent-ink:#ffffff; --tint:#dcebee;
+  --good:#1f7a4d; --warn:#a8620a; --bad:#b3372f;
+  --good-bg:#e3f2ea; --warn-bg:#f8ecd9; --bad-bg:#f8e3e1;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f171b; --surface:#18242a; --ink:#e6eef1; --muted:#93a4ac; --line:#2a3a42;
+    --accent:#4fb6c6; --accent-ink:#06262c; --tint:#1d3238;
+    --good:#5fc592; --warn:#e0a44a; --bad:#ef7d73;
+    --good-bg:#173527; --warn-bg:#3a2d14; --bad-bg:#3d1f1c; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--body);-webkit-text-size-adjust:100%}
+#app{max-width:1280px;margin:0 auto;padding:20px 20px 80px;display:flex;flex-direction:column;gap:18px}
+h1{font:700 22px/1.2 var(--display);margin:0;letter-spacing:.01em}
+h2{font:700 17px/1.2 var(--display);margin:0}
+h3{font:600 12px/1.2 var(--body);margin:0 0 10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.end{justify-content:flex-end}
+.muted{color:var(--muted)} .small{font-size:13px} .mono{font-family:var(--mono);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.btn{font:600 14px/1 var(--body);padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:7px 10px;font-size:13px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile b{display:block;font:700 24px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.tile.warn b{color:var(--warn)} .tile.bad b{color:var(--bad)} .tile.good b{color:var(--good)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tools input[type=search]{flex:1 1 260px}
+input,select,textarea{font:400 15px/1.3 var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+textarea{min-height:64px;resize:vertical}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.field{min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.wide{grid-column:1/-1}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink);margin:0}
+.check input{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip.good{color:var(--good);background:var(--good-bg)} .chip.warn{color:var(--warn);background:var(--warn-bg)}
+.chip.bad{color:var(--bad);background:var(--bad-bg)} .chip.none{color:var(--muted);background:var(--bg)}
+.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);position:sticky;top:0}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr.co{cursor:pointer}
+tbody tr.co:hover{background:var(--tint)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.name{font-weight:600}
+.cards{display:none;flex-direction:column;gap:10px}
+.cocard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer}
+.cocard .kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px;margin-top:8px}
+.cocard .kv span:nth-child(odd){color:var(--muted)}
+@media (max-width:820px){ .tablewrap{display:none} .cards{display:flex} #app{padding:16px 14px 80px} }
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--bg);color:var(--ink);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 24px)}
+dialog::backdrop{background:rgba(8,18,22,.55)}
+.dlg{padding:18px;display:flex;flex-direction:column;gap:14px}
+.pay{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 12px;align-items:center;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
+.pay:last-child{border-bottom:0}
+.msg{font-size:13px}
+.msg.bad{color:var(--bad)} .msg.good{color:var(--good)}
+.center{max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../config.js"></script>
+<script>
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const dmy=s=>{if(!s)return '—';const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'.'+m[2]+'.'+m[1]:'—'};
+const dmyT=s=>{if(!s)return '—';const d=new Date(s);if(isNaN(d))return '—';return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()};
+const money=(n,cur)=>n==null||n===''||isNaN(Number(n))?'—':Number(n).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(cur==='ALL'?'L':cur==='EUR'?'€':esc(cur||''));
+const daysTo=s=>{if(!s)return null;const a=new Date(s+'T00:00:00'),b=new Date(today()+'T00:00:00');return Math.round((a-b)/864e5)};
+const CUR=['EUR','ALL'];
+
+let SB=null;
+const S={view:'boot',err:'',busy:false,mail:'',list:[],q:'',filter:'all',open:null,dErr:'',dMsg:'',dBusy:false,delAsk:null};
+
+function status(c){
+  const e=c.sub&&c.sub.expires_on,d=daysTo(e);
+  if(!c.sub||!e)return {k:'none',cls:'none',label:c.sub?'Pa afat':'Pa abonim'};
+  if(d<0)return {k:'expired',cls:'bad',label:'Skaduar para '+(-d)+' ditësh'};
+  if(d<=7)return {k:'soon',cls:'warn',label:d===0?'Skadon sot':'Skadon për '+d+' ditë'};
+  return {k:'active',cls:'good',label:'Aktiv'};
+}
+function totals(list){
+  const t={};list.forEach(c=>c.payments.forEach(p=>{t[p.currency]=(t[p.currency]||0)+Number(p.amount||0)}));
+  return Object.keys(t).sort().map(k=>money(t[k],k)).join(' · ')||'—';
+}
+function filtered(){
+  const q=S.q.trim().toLowerCase();
+  return S.list.filter(c=>{
+    if(S.filter!=='all'&&status(c).k!==S.filter)return false;
+    if(!q)return true;
+    return [c.name,c.nipt,c.phone,(c.sub&&c.sub.plan)||'',(c.sub&&c.sub.note)||''].concat(c.users.map(u=>u.email)).join(' ').toLowerCase().includes(q);
+  });
+}
+const paid=c=>{const t={};c.payments.forEach(p=>{t[p.currency]=(t[p.currency]||0)+Number(p.amount||0)});return Object.keys(t).sort().map(k=>money(t[k],k)).join(' · ')||'—'};
+const lastLogin=c=>{const a=c.users.map(u=>u.last_sign_in_at).filter(Boolean).sort();return a.length?a[a.length-1]:null};
+
+function render(){
+  const app=$('#app');
+  if(S.view==='boot'){app.innerHTML='<div class="center muted">Po ngarkohet…</div>';return}
+  if(S.view==='login'){app.innerHTML=`<div class="center">
+    <div class="brand"><h1>AutoSales ERP · Admin</h1><span>Hyr me llogarinë e administratorit</span></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.mail)}"></div>
+      <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+      ${S.err?`<div class="msg bad">${esc(S.err)}</div>`:''}
+      <button class="btn primary" data-act="login" ${S.busy?'disabled':''} style="justify-content:center">${S.busy?'Po hyn…':'Hyr'}</button></div>
+    <div class="small" style="text-align:center"><a href="../" style="color:var(--accent)">‹ Kthehu te programi</a></div></div>`;return}
+  if(S.view==='denied'){app.innerHTML=`<div class="center">
+    <div class="brand"><h1>AutoSales ERP · Admin</h1><span>${esc(S.mail)}</span></div>
+    <div class="card">Kjo llogari nuk ka të drejta administratori.</div>
+    <div class="row"><a class="btn" href="../">‹ Te programi</a><button class="btn" data-act="logout">Dil</button></div></div>`;return}
+
+  const L=S.list,st=L.map(status),cnt=k=>st.filter(s=>s.k===k).length,rows=filtered();
+  const tile=(k,n,label,cls)=>`<button class="tile ${cls||''}" data-act="filter" data-f="${k}" style="text-align:left;cursor:pointer;font:inherit;color:inherit;${S.filter===k?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)':''}"><b>${n}</b><span>${label}</span></button>`;
+  app.innerHTML=`<div class="top">
+      <div class="brand"><h1>AutoSales ERP · Admin</h1><span>${esc(S.mail)}</span></div>
+      <div class="row"><button class="btn" data-act="reload">Rifresko</button><a class="btn" href="../">Te programi</a><button class="btn" data-act="logout">Dil</button></div></div>
+    <div class="tiles">
+      ${tile('all',L.length,'Kompani')}${tile('active',cnt('active'),'Aktive','good')}${tile('soon',cnt('soon'),'Skadojnë në 7 ditë','warn')}
+      ${tile('expired',cnt('expired'),'Skaduara','bad')}${tile('none',cnt('none'),'Pa afat / pa abonim')}
+      <div class="tile"><b style="font-size:18px;line-height:1.35">${totals(L)}</b><span>Arkëtuar gjithsej</span></div>
+    </div>
+    <div class="tools"><input type="search" id="q" placeholder="Kërko: emër, NIPT, email, plan…" value="${esc(S.q)}" autocomplete="off">
+      <span class="small muted">${rows.length} nga ${L.length}</span></div>
+    ${S.err?`<div class="msg bad">${esc(S.err)}</div>`:''}
+    <div id="list">${listHtml(rows)}</div>
+    <dialog id="dlg"></dialog>`;
+  if(S.open)openDialog(false);
+}
+function listHtml(rows){
+  if(!rows.length)return `<div class="card muted">${S.list.length?'Asnjë kompani nuk përputhet me kërkimin.':'Nuk ka ende kompani të regjistruara.'}</div>`;
+  return `<div class="tablewrap"><table><thead><tr><th>Nr.</th><th>Kompania</th><th>Përdoruesit</th><th>Regjistruar</th><th>Hyrja e fundit</th><th class="num">Mjete</th><th>Plani</th><th class="num">Çmimi</th><th>Afati</th><th>Gjendja</th><th>Skanimi</th><th class="num">Paguar</th></tr></thead><tbody>
+    ${rows.map((c,i)=>{const s=status(c),b=c.sub||{};return `<tr class="co" data-act="open" data-id="${esc(c.id)}" tabindex="0">
+      <td class="muted">${i+1}</td>
+      <td><div class="name">${esc(c.name||'(pa emër)')}</div><div class="mono muted">${esc(c.nipt||'—')}</div></td>
+      <td class="small">${c.users.map(u=>esc(u.email)).join('<br>')||'<span class="muted">—</span>'}</td>
+      <td class="small">${dmyT(c.created_at)}</td><td class="small">${dmyT(lastLogin(c))}</td>
+      <td class="num">${c.vehicles}<span class="muted small"> / ${c.sold} shitur</span></td>
+      <td>${esc(b.plan||'—')}</td><td class="num">${money(b.price,b.currency)}</td><td class="small">${dmy(b.expires_on)}</td>
+      <td><span class="chip ${s.cls}">${s.label}</span></td>
+      <td class="small">${b.scan_enabled===false?'<span class="chip bad">Fikur</span>':'<span class="muted">Ndezur</span>'}</td>
+      <td class="num">${paid(c)}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <div class="cards">${rows.map(c=>{const s=status(c),b=c.sub||{};return `<div class="cocard" data-act="open" data-id="${esc(c.id)}" tabindex="0">
+      <div class="row" style="justify-content:space-between"><div><div class="name">${esc(c.name||'(pa emër)')}</div><div class="mono muted">${esc(c.nipt||'—')}</div></div><span class="chip ${s.cls}">${s.label}</span></div>
+      <div class="kv"><span>Përdoruesi</span><span>${esc((c.users[0]||{}).email||'—')}</span><span>Plani</span><span>${esc(b.plan||'—')} · ${money(b.price,b.currency)}</span>
+      <span>Afati</span><span>${dmy(b.expires_on)}</span><span>Mjete</span><span>${c.vehicles} / ${c.sold} shitur</span><span>Paguar</span><span>${paid(c)}</span></div></div>`}).join('')}</div>`;
+}
+function dialogHtml(c){
+  const b=c.sub||{},s=status(c),opt=(v,cur)=>CUR.map(k=>`<option value="${k}" ${k===(cur||'EUR')?'selected':''}>${k==='ALL'?'Lek':'Euro'}</option>`).join('');
+  return `<div class="dlg">
+    <div class="top"><div><h2>${esc(c.name||'(pa emër)')}</h2><div class="mono muted">${esc(c.nipt||'—')}${c.phone?' · '+esc(c.phone):''}</div></div>
+      <div class="row"><span class="chip ${s.cls}">${s.label}</span><button class="btn sm" data-act="close">Mbyll</button></div></div>
+    <div class="card"><h3>Llogaria</h3>
+      <div class="small">${c.users.map(u=>`${esc(u.email)} <span class="muted">· hyrja e fundit ${dmyT(u.last_sign_in_at)}</span>`).join('<br>')||'<span class="muted">Asnjë përdorues</span>'}</div>
+      <div class="small muted" style="margin-top:6px">Regjistruar ${dmyT(c.created_at)} · ${c.vehicles} mjete, ${c.sold} të shitura · veprimi i fundit ${dmyT(c.last_activity)}</div></div>
+    <div class="card"><h3>Abonimi</h3><div class="grid">
+      <div class="field"><label for="s-plan">Plani</label><input id="s-plan" type="text" value="${esc(b.plan||'')}" placeholder="p.sh. Mujor, Vjetor, Provë" autocomplete="off" list="plans"><datalist id="plans"><option value="Provë"><option value="Mujor"><option value="Vjetor"></datalist></div>
+      <div class="field"><label for="s-price">Çmimi</label><input id="s-price" type="number" min="0" step="0.01" inputmode="decimal" value="${b.price==null?'':esc(b.price)}"></div>
+      <div class="field"><label for="s-cur">Monedha</label><select id="s-cur">${opt(0,b.currency)}</select></div>
+      <div class="field"><label for="s-exp">Afati (vlen deri më)</label><input id="s-exp" type="date" value="${esc(b.expires_on||'')}"></div>
+      <div class="field wide"><label for="s-note">Shënim</label><textarea id="s-note">${esc(b.note||'')}</textarea></div>
+      <label class="check wide"><input id="s-scan" type="checkbox" ${b.scan_enabled===false?'':'checked'}> Skanimi i fletës doganore i lejuar</label></div>
+      <div class="row end" style="margin-top:12px"><button class="btn primary" data-act="savesub" ${S.dBusy?'disabled':''}>Ruaj abonimin</button></div></div>
+    <div class="card"><h3>Pagesë e re</h3><div class="grid">
+      <div class="field"><label for="p-date">Data</label><input id="p-date" type="date" value="${today()}"></div>
+      <div class="field"><label for="p-amount">Shuma</label><input id="p-amount" type="number" min="0" step="0.01" inputmode="decimal" value="${b.price==null?'':esc(b.price)}"></div>
+      <div class="field"><label for="p-cur">Monedha</label><select id="p-cur">${opt(0,b.currency)}</select></div>
+      <div class="field"><label for="p-months">Për sa muaj</label><input id="p-months" type="number" min="1" max="120" step="1" inputmode="numeric" value="1"></div>
+      <div class="field wide"><label for="p-note">Shënim</label><input id="p-note" type="text" placeholder="p.sh. bankë, cash, nr. fature" autocomplete="off"></div>
+      <label class="check wide"><input id="p-extend" type="checkbox" checked> Zgjate afatin me kaq muaj</label></div>
+      <div class="row end" style="margin-top:12px"><button class="btn primary" data-act="addpay" ${S.dBusy?'disabled':''}>Shto pagesën</button></div></div>
+    ${S.dErr?`<div class="msg bad">${esc(S.dErr)}</div>`:''}${S.dMsg?`<div class="msg good">${esc(S.dMsg)}</div>`:''}
+    <div class="card"><h3>Pagesat (${c.payments.length}) · ${paid(c)}</h3>
+      ${c.payments.length?c.payments.map(p=>`<div class="pay"><span class="mono">${dmy(p.paid_on)}</span><span class="small muted">${p.months?p.months+' muaj':''}${p.note?(p.months?' · ':'')+esc(p.note):''}</span><b class="num">${money(p.amount,p.currency)}</b>
+        ${S.delAsk===p.id?`<span class="row"><button class="btn sm danger" data-act="delpay" data-pid="${esc(p.id)}">Po, fshije</button><button class="btn sm" data-act="delno">Jo</button></span>`:`<button class="btn sm" data-act="delask" data-pid="${esc(p.id)}" aria-label="Fshi pagesën">Fshi</button>`}</div>`).join('')
+      :'<div class="small muted">Nuk ka ende pagesa.</div>'}</div></div>`;
+}
+function openDialog(show){
+  const c=S.list.find(x=>x.id===S.open),d=$('#dlg');if(!c||!d){S.open=null;return}
+  const keep={};if(!show)d.querySelectorAll('input,select,textarea').forEach(el=>{if(el.id)keep[el.id]=el.type==='checkbox'?el.checked:el.value});
+  d.innerHTML=dialogHtml(c);
+  if(!d.open)d.showModal();
+}
+function refreshDialog(keepForm){
+  const d=$('#dlg'),c=S.list.find(x=>x.id===S.open);if(!d||!c)return;
+  const keep={};if(keepForm)d.querySelectorAll('input,select,textarea').forEach(el=>{if(el.id)keep[el.id]=el.type==='checkbox'?el.checked:el.value});
+  const top=d.scrollTop;d.innerHTML=dialogHtml(c);
+  Object.keys(keep).forEach(id=>{const el=$('#'+id,d);if(el){if(el.type==='checkbox')el.checked=keep[id];else el.value=keep[id]}});
+  d.scrollTop=top;
+}
+
+async function load(){
+  const {data,error}=await SB.rpc('admin_overview');
+  if(error){S.err='Lista nuk u ngarkua. Provo “Rifresko”.';return false}
+  S.err='';S.list=Array.isArray(data)?data:[];return true;
+}
+async function start(){
+  S.view='boot';render();
+  const {data}=await SB.auth.getSession();
+  if(!data.session){S.view='login';render();return}
+  S.mail=(data.session.user&&data.session.user.email)||'';
+  const adm=await SB.rpc('is_admin');
+  if(adm.error){S.view='login';S.err='Nuk u lidh dot me serverin. Provo përsëri.';render();return}
+  if(adm.data!==true){S.view='denied';render();return}
+  await load();S.view='main';render();
+}
+async function doLogin(){
+  if(S.busy)return;
+  const email=$('#l-mail').value.trim(),password=$('#l-pass').value;S.mail=email;
+  if(!email||!password){S.err='Shkruaj emailin dhe fjalëkalimin.';render();return}
+  S.busy=true;S.err='';render();
+  const {error}=await SB.auth.signInWithPassword({email,password});
+  S.busy=false;
+  if(error){S.err=/invalid/i.test(error.message||'')?'Emaili ose fjalëkalimi nuk është i saktë.':'Hyrja dështoi. Provo përsëri.';render();return}
+  start();
+}
+const numOrNull=v=>{v=String(v).trim().replace(',','.');if(v==='')return null;const n=Number(v);return isNaN(n)?NaN:n};
+async function saveSub(){
+  const c=S.list.find(x=>x.id===S.open);if(!c||S.dBusy)return;
+  const price=numOrNull($('#s-price').value);
+  if(Number.isNaN(price)||price<0){S.dErr='Çmimi nuk është numër i saktë.';S.dMsg='';refreshDialog(true);return}
+  S.dBusy=true;S.dErr='';S.dMsg='';refreshDialog(true);
+  const {error}=await SB.rpc('admin_set_subscription',{p_company:c.id,p_plan:$('#s-plan').value.trim(),p_price:price,p_currency:$('#s-cur').value,
+    p_expires_on:$('#s-exp').value||null,p_scan_enabled:$('#s-scan').checked,p_note:$('#s-note').value.trim()});
+  S.dBusy=false;
+  if(error){S.dErr='Abonimi nuk u ruajt. Provo përsëri.';refreshDialog(true);return}
+  await load();S.dMsg='Abonimi u ruajt.';afterChange();
+}
+async function addPay(){
+  const c=S.list.find(x=>x.id===S.open);if(!c||S.dBusy)return;
+  const amount=numOrNull($('#p-amount').value),mv=String($('#p-months').value).trim(),months=mv===''?null:Number(mv),extend=$('#p-extend').checked;
+  const fail=m=>{S.dErr=m;S.dMsg='';refreshDialog(true)};
+  if(amount==null||Number.isNaN(amount)||amount<=0)return fail('Shkruaj shumën e pagesës.');
+  if(months!=null&&(!Number.isInteger(months)||months<1||months>120))return fail('Muajt duhet të jenë numër i plotë nga 1 deri në 120.');
+  if(extend&&months==null)return fail('Për të zgjatur afatin, shkruaj për sa muaj është pagesa.');
+  if(!$('#p-date').value)return fail('Zgjidh datën e pagesës.');
+  S.dBusy=true;S.dErr='';S.dMsg='';refreshDialog(true);
+  const {data,error}=await SB.rpc('admin_add_payment',{p_company:c.id,p_paid_on:$('#p-date').value,p_amount:amount,p_currency:$('#p-cur').value,p_months:months,p_note:$('#p-note').value.trim(),p_extend:extend});
+  S.dBusy=false;
+  if(error){S.dErr='Pagesa nuk u shtua. Provo përsëri.';refreshDialog(true);return}
+  await load();S.dMsg='Pagesa u shtua.'+(data?' Afati i ri: '+dmy(data)+'.':'');afterChange();
+}
+async function delPay(pid){
+  if(S.dBusy)return;S.dBusy=true;S.delAsk=null;
+  const {error}=await SB.rpc('admin_delete_payment',{p_id:pid});
+  S.dBusy=false;
+  if(error){S.dErr='Pagesa nuk u fshi. Provo përsëri.';S.dMsg='';refreshDialog(true);return}
+  await load();S.dErr='';S.dMsg='Pagesa u fshi. Afati nuk ndryshoi; rregulloje me dorë nëse duhet.';afterChange();
+}
+// Pas një ndryshimi: lista poshtë dhe dritarja rifreskohen me të dhënat e reja nga serveri.
+function afterChange(){
+  const d=$('#dlg');const top=d?d.scrollTop:0;
+  $('#list').innerHTML=listHtml(filtered());
+  document.querySelectorAll('.tiles').forEach(t=>{const tmp=document.createElement('div');const L=S.list,st=L.map(status),cnt=k=>st.filter(s=>s.k===k).length;
+    const b=t.querySelectorAll('.tile b');if(b.length>=6){b[0].textContent=L.length;b[1].textContent=cnt('active');b[2].textContent=cnt('soon');b[3].textContent=cnt('expired');b[4].textContent=cnt('none');b[5].textContent=totals(L)}});
+  if(d&&S.open){d.innerHTML=dialogHtml(S.list.find(x=>x.id===S.open)||{users:[],payments:[]});d.scrollTop=top}
+}
+
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act;
+  if(act==='login')return doLogin();
+  if(act==='logout'){try{await SB.auth.signOut()}catch(x){}location.reload();return}
+  if(act==='reload'){b.disabled=true;await load();render();return}
+  if(act==='filter'){S.filter=b.dataset.f;render();return}
+  if(act==='open'){S.open=b.dataset.id;S.dErr='';S.dMsg='';S.delAsk=null;openDialog(true);return}
+  if(act==='close'){const d=$('#dlg');if(d)d.close();return}
+  if(act==='savesub')return saveSub();
+  if(act==='addpay')return addPay();
+  if(act==='delask'){S.delAsk=b.dataset.pid;refreshDialog(true);return}
+  if(act==='delno'){S.delAsk=null;refreshDialog(true);return}
+  if(act==='delpay')return delPay(b.dataset.pid);
+});
+document.addEventListener('close',e=>{if(e.target.id==='dlg'){S.open=null;S.delAsk=null}},true);
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;$('#list').innerHTML=listHtml(filtered());const n=$('.tools .muted');if(n)n.textContent=filtered().length+' nga '+S.list.length}});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  if(e.target.id==='l-pass'||e.target.id==='l-mail')doLogin();
+  else if(e.target.matches&&e.target.matches('[data-act=open]')){S.open=e.target.dataset.id;S.dErr='';S.dMsg='';openDialog(true)}
+});
+
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+(async()=>{
+  const cfg=window.AUTOSALES_CONFIG;
+  render();
+  try{
+    if(!cfg||!cfg.supabaseUrl)throw new Error('config');
+    if(!window.supabase)await loadScript(cfg.sdk||'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+    SB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+  }catch(e){S.view='login';S.err='Nuk u lidh dot me serverin. Kontrollo internetin dhe rifresko faqen.';render();return}
+  start();
+})();
+</script>
+</body>
+</html>
