@@ -847,6 +847,9 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const act=b.dataset.act,v=S.vehicles.find(x=>x.id===S.id);
   if(act==='login'){doLogin();return}
+  if(act==='signup'){doSignup();return}
+  if(act==='resend'){doResend();return}
+  if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='company'){S.view='company';scrollTo(0,0)}
   else if(act==='coadd'){
@@ -1000,23 +1003,68 @@ document.addEventListener('keydown',e=>{
 /* ---------- Supabase (kur programi rri në hostin e vet) ---------- */
 let SB=null;
 function viewLogin(){
+  const up=S.loginMode==='signup';
+  const link='background:none;border:0;padding:6px;color:var(--accent,#0b5c6b);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
   return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div class="brand"><h1>AutoSales ERP</h1><span>Hyr me llogarinë e kompanisë</span></div>
-    <div class="card">
+    <div class="brand"><h1>AutoSales ERP</h1><span>${up?'Krijo llogarinë e kompanisë':'Hyr me llogarinë e kompanisë'}</span></div>
+    ${S.loginSent?`<div class="card"><b>Kontrollo emailin</b>
+      <div class="small" style="margin-top:6px">Dërguam një link konfirmimi te <b>${esc(S.loginSent)}</b>. Hape emailin dhe shtyp linkun, pastaj hyr me fjalëkalimin tënd. Nëse nuk e gjen, shiko edhe te Spam.</div>
+      ${S.loginErr?`<div class="small" style="color:var(--bad);margin-top:6px">${esc(S.loginErr)}</div>`:''}
+      ${S.loginMsg?`<div class="small" style="color:var(--good);margin-top:6px">${esc(S.loginMsg)}</div>`:''}
+      <button class="btn" data-act="resend" style="margin-top:10px" ${S.loginBusy?'disabled':''}>Dërgoje përsëri</button></div>
+      <div style="text-align:center"><button style="${link}" data-act="login-mode" data-mode="login">Kthehu te hyrja</button></div>`
+    :`<div class="card">
       <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
-      <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="${up?'new-password':'current-password'}"></div>
+      ${up?`<div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>`:''}
       ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
-      <button class="btn primary" data-act="login" ${S.loginBusy?'disabled':''}>${S.loginBusy?'Po hyn…':'Hyr'}</button></div></div>`;
+      ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`:''}
+      <button class="btn primary" data-act="${up?'signup':'login'}" ${S.loginBusy?'disabled':''}>${up?(S.loginBusy?'Po krijohet…':'Krijo llogari'):(S.loginBusy?'Po hyn…':'Hyr')}</button></div>
+      <div style="text-align:center" class="small">${up?'Ke llogari?':'Nuk ke llogari?'} <button style="${link}" data-act="login-mode" data-mode="${up?'login':'signup'}">${up?'Hyr':'Krijo llogari'}</button></div>`}
+    </div>`;
 }
+function loginMode(m){S.loginMode=m;S.loginErr='';S.loginMsg='';S.loginSent='';const el=$('#l-mail');if(el)S.loginMail=el.value.trim();render()}
+function authRedirect(){return location.origin+location.pathname}
 async function doLogin(){
   if(!SB||S.loginBusy)return;
   const email=$('#l-mail').value.trim(),password=$('#l-pass').value;
   if(!email||!password){S.loginErr='Shkruaj emailin dhe fjalëkalimin.';S.loginMail=email;render();return}
-  S.loginBusy=true;S.loginErr='';S.loginMail=email;render();
+  S.loginBusy=true;S.loginErr='';S.loginMsg='';S.loginMail=email;render();
   const {error}=await SB.auth.signInWithPassword({email,password});
   S.loginBusy=false;
-  if(error){S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.':'Hyrja dështoi. Provo përsëri.';render();return}
+  if(error){
+    if(/not confirmed/i.test(error.message)){S.loginSent=email;S.loginErr='Emaili nuk është konfirmuar ende.';render();return}
+    S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.':'Hyrja dështoi. Provo përsëri.';render();return}
   startSupabase();
+}
+async function doSignup(){
+  if(!SB||S.loginBusy)return;
+  const email=$('#l-mail').value.trim(),password=$('#l-pass').value,p2=$('#l-pass2').value;
+  S.loginMail=email;S.loginMsg='';
+  const fail=m=>{S.loginErr=m;render()};
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return fail('Shkruaj një email të saktë.');
+  if(password.length<8)return fail('Fjalëkalimi duhet të ketë të paktën 8 shkronja ose numra.');
+  if(password!==p2)return fail('Fjalëkalimet nuk përputhen.');
+  S.loginBusy=true;S.loginErr='';render();
+  const {data,error}=await SB.auth.signUp({email,password,options:{emailRedirectTo:authRedirect()}});
+  S.loginBusy=false;
+  if(error){
+    const m=error.message||'';
+    return fail(/already|registered/i.test(m)?'Ky email ka tashmë llogari. Hyr me të.'
+      :/signups? (not allowed|disabled)/i.test(m)?'Krijimi i llogarive të reja është i mbyllur për momentin.'
+      :/rate|too many|seconds/i.test(m)?'U dërguan shumë emaile. Prit pak minuta dhe provo përsëri.'
+      :/password/i.test(m)?'Fjalëkalimi është shumë i dobët. Zgjidh një më të gjatë.'
+      :'Llogaria nuk u krijua. Provo përsëri.');
+  }
+  if(data&&data.session){S.loginMode='login';startSupabase();return}
+  // Supabase nuk tregon nëse emaili ekziston: përdoruesi sheh të njëjtin mesazh në të dyja rastet.
+  S.loginSent=email;render();
+}
+async function doResend(){
+  if(!SB||S.loginBusy||!S.loginSent)return;
+  S.loginBusy=true;S.loginErr='';S.loginMsg='';render();
+  const {error}=await SB.auth.resend({type:'signup',email:S.loginSent,options:{emailRedirectTo:authRedirect()}});
+  S.loginBusy=false;S.loginErr=error?'Emaili nuk u dërgua. Prit një minutë dhe provo përsëri.':'';S.loginMsg=error?'':'U dërgua përsëri.';render();
 }
 async function doLogout(){try{await SB.auth.signOut()}catch(e){}location.reload()}
 function supaDb(sb,cid){
@@ -1068,8 +1116,10 @@ async function bootSupabase(cfg){
   try{
     if(!window.supabase)await loadScript(cfg.sdk||'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
     SB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+    const badLink=/error(_code|_description)?=/.test(location.hash+location.search);
     const {data}=await SB.auth.getSession();
-    if(!data.session){S.view='login';render();return}
+    if(location.hash.includes('access_token')||badLink||/[?&]code=/.test(location.search))history.replaceState(null,'',location.pathname);
+    if(!data.session){S.view='login';if(badLink)S.loginErr='Linku i konfirmimit ka skaduar ose është përdorur. Hyr, ose kërko një link të ri.';render();return}
   }catch(e){S.view='login';S.loginErr='Nuk u lidh dot me serverin. Kontrollo internetin dhe rifresko faqen.';render();return}
   startSupabase();
 }
@@ -1118,7 +1168,7 @@ async function boot(){
   }else{clearTimeout(timer);S.loaded=true;loadLocal();if(S.view==='list')render()}
 }
 boot();
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='l-pass')doLogin()});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(e.target.id==='l-pass2')doSignup();else if(e.target.id==='l-pass'&&S.loginMode!=='signup')doLogin()});
 if('serviceWorker' in navigator&&!(window.claude&&window.claude.use)&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
