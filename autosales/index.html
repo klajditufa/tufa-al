@@ -1141,7 +1141,9 @@ async function doResend(){
   const {error}=await SB.auth.resend({type:'signup',email:S.loginSent,options:{emailRedirectTo:authRedirect()}});
   S.loginBusy=false;S.loginErr=error?'Emaili nuk u dërgua. Prit një minutë dhe provo përsëri.':'';S.loginMsg=error?'':'U dërgua përsëri.';render();
 }
-async function doLogout(){try{await SB.auth.signOut()}catch(e){}location.reload()}
+// Nëse serveri thotë se sesioni s'ekziston më, signOut nuk e fshin kopjen lokale: e fshijmë vetë.
+function clearLocalSession(){try{Object.keys(localStorage).filter(k=>/^sb-.*-auth-token/.test(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}}
+async function doLogout(){try{await SB.auth.signOut({scope:'local'})}catch(e){}clearLocalSession();location.reload()}
 function supaDb(sb,cid){
   const subs=[];let pending=0;
   const snap=(id,row)=>({id,exists:!!row,data:()=>row?row.data:undefined});
