@@ -578,7 +578,36 @@ function viewCompany(){
   :`<div class="card"><h3>Kompania</h3><div class="grid2">
     <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="off"></div>
     <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="12" autocomplete="off" style="text-transform:uppercase"></div></div>
-    <div class="row end"><button class="btn primary" data-act="coadd">Ruaj</button></div></div>`}`;
+    <div class="row end"><button class="btn primary" data-act="coadd">Ruaj</button></div></div>`}
+  ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
+    ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
+    <div class="grid2">
+    <div class="field wide"><label for="pw-old">Fjalëkalimi i tanishëm</label><input id="pw-old" type="password" autocomplete="current-password"></div>
+    <div class="field"><label for="pw-new">Fjalëkalimi i ri</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+    <div class="field"><label for="pw-new2">Përsërit fjalëkalimin e ri</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div>
+    ${S.pwErr?`<div class="small" style="color:var(--bad)">${esc(S.pwErr)}</div>`:''}
+    ${S.pwMsg?`<div class="small" style="color:var(--good)">${esc(S.pwMsg)}</div>`:''}
+    <div class="row end"><button class="btn primary" data-act="pwchange" ${S.pwBusy?'disabled':''}>${S.pwBusy?'Po ruhet…':'Ndrysho fjalëkalimin'}</button></div></div>`:''}`;
+}
+async function doChangePass(){
+  if(!SB||S.pwBusy)return;
+  const old=$('#pw-old').value,p1=$('#pw-new').value,p2=$('#pw-new2').value;
+  const done=(err,msg)=>{S.pwBusy=false;S.pwErr=err||'';S.pwMsg=msg||'';if(S.view==='company')render()};
+  if(!old)return done('Shkruaj fjalëkalimin e tanishëm.');
+  if(p1.length<8)return done('Fjalëkalimi i ri duhet të ketë të paktën 8 shkronja ose numra.');
+  if(p1!==p2)return done('Fjalëkalimet e reja nuk përputhen.');
+  if(p1===old)return done('Fjalëkalimi i ri duhet të jetë i ndryshëm nga i tanishmi.');
+  S.pwBusy=true;S.pwErr='';S.pwMsg='';render();
+  try{
+    let mail=S.userMail;
+    if(!mail){const {data}=await SB.auth.getUser();mail=data&&data.user&&data.user.email;S.userMail=mail||''}
+    if(!mail)return done('Llogaria nuk u gjet. Dil dhe hyr përsëri.');
+    const chk=await SB.auth.signInWithPassword({email:mail,password:old});
+    if(chk.error)return done(/invalid/i.test(chk.error.message||'')?'Fjalëkalimi i tanishëm nuk është i saktë.':'Nuk u kontrollua dot fjalëkalimi. Provo përsëri.');
+    const {error}=await SB.auth.updateUser({password:p1});
+    if(error)return done(/weak|least|short/i.test(error.message||'')?'Fjalëkalimi i ri është shumë i dobët. Zgjidh një më të gjatë.':'Fjalëkalimi nuk u ndryshua. Provo përsëri.');
+    done('','Fjalëkalimi u ndryshua.');
+  }catch(e){done('Nuk u lidh dot me serverin. Provo përsëri.')}
 }
 
 /* ---------- contract ---------- */
@@ -853,7 +882,8 @@ document.addEventListener('click',e=>{
   if(act==='newpass'){doNewPass();return}
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
-  if(act==='company'){S.view='company';scrollTo(0,0)}
+  if(act==='pwchange'){doChangePass();return}
+  if(act==='company'){S.view='company';S.pwErr='';S.pwMsg='';scrollTo(0,0)}
   else if(act==='coadd'){
     const name=$('#co-new-name').value.trim(),nipt=$('#co-new-nipt').value.trim().toUpperCase();
     if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
@@ -1173,6 +1203,7 @@ async function bootSupabase(cfg){
 async function startSupabase(){
   S.view='list';S.loaded=false;S.slow=false;render();
   const timer=setTimeout(()=>{if(!S.loaded){S.slow=true;if(S.view==='list')render()}},10000);
+  try{const u=await SB.auth.getSession();S.userMail=(u.data.session&&u.data.session.user&&u.data.session.user.email)||''}catch(e){}
   const {data:cid,error}=await SB.rpc('ensure_company');
   if(error||!cid){clearTimeout(timer);S.view='login';S.loginErr='Hyrja u krye, por kompania nuk u ngarkua. Provo përsëri.';render();return}
   S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
