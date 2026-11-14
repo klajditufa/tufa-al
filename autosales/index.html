@@ -583,7 +583,7 @@ function viewSell(){
     <div class="field"><label for="s-price">Çmimi pa TVSH (${unit})</label><input id="s-price" data-s="price" type="text" inputmode="numeric" class="num" value="${s.price===''?'':money(num(s.price))}" autocomplete="off"></div>
     <div class="field"><label for="s-pricevat">Çmimi me TVSH 20% (${unit})</label><input id="s-pricevat" data-s="priceVat" type="text" inputmode="numeric" class="num" value="${pv===''?'':money(pv)}" autocomplete="off"></div></div>
     <div id="sout"></div></div>
-  ${SB?`<div class="card"><h3>Pagesa</h3><div class="seg" role="group" aria-label="Mënyra e pagesës">${Object.keys(PAY_NAME).map(k=>`<button data-act="spay" data-v="${k}" aria-pressed="${(s.pay||'CASH')===k}">${PAY_NAME[k]}</button>`).join('')}</div>
+  ${SB&&FISCAL_ON?`<div class="card"><h3>Pagesa</h3><div class="seg" role="group" aria-label="Mënyra e pagesës">${Object.keys(PAY_NAME).map(k=>`<button data-act="spay" data-v="${k}" aria-pressed="${(s.pay||'CASH')===k}">${PAY_NAME[k]}</button>`).join('')}</div>
     <div class="small muted" style="margin-top:8px">Përdoret te fatura e fiskalizuar. Me bankë, për blerës me NIPT lëshohet faturë elektronike.</div></div>`:''}
   <div class="row end"><button class="btn" data-act="sellcancel">Anulo</button><button class="btn primary" data-act="sellconfirm">Përfundo shitjen</button></div>`;
 }
@@ -1117,7 +1117,7 @@ document.addEventListener('click',e=>{
     if(eur&&!(rate>0)){toast('Shkruaj kursin e euros.');return}
     const price=eur?Math.round(pc*rate*100)/100:pc;
     v.status='sold';v.sale={buyer:String(S.sale.buyer||'').trim(),buyer_id:String(S.sale.buyer_id||'').trim().toUpperCase(),buyer_is_nipt:!!S.sale.is_nipt,address:String(S.sale.address||'').trim(),city:String(S.sale.city||'').trim(),date:S.sale.date||today(),price};
-    if(SB)v.sale.pay=PAY_NAME[S.sale.pay]?S.sale.pay:'CASH';
+    if(SB&&FISCAL_ON)v.sale.pay=PAY_NAME[S.sale.pay]?S.sale.pay:'CASH';
     if(eur){v.sale.cur='EUR';v.sale.rate=rate;if(num(S.settings.eur_rate)!==rate){S.settings.eur_rate=rate;saveSettings()}}
     v.sale.contract_no=nextContractNo(v.sale.date.slice(0,4),v);save(v);
     S.view='contract';S.confirmDel=false;scrollTo(0,0);
@@ -1201,6 +1201,9 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Fiskalizimi (vetëm në server): lidhja me easyPos ose fature.al për çdo NIPT ---------- */
+// Fiskalizimi është i fikur për momentin: kodi dhe serveri janë gati, por nuk u shfaqet përdoruesve.
+// Për ta ndezur: FISCAL_ON=true (dhe LIVE_ENABLED te funksioni "fiscal" pasi të provohet me token prove).
+const FISCAL_ON=false;
 const FISC_NAME={easypos:'easyPos',fature:'fature.al'},PAY_NAME={CASH:'Para në dorë',BANK:'Bankë',CARD:'Kartë'};
 const FISC_ERR={bad_token:'Tokeni nuk u pranua nga ofruesi. Kontrollo që është i mjedisit të provës dhe i kopjuar i plotë.',bad_operator:'Kodi i operatorit ka formën ab123cd456.',
   nipt_mismatch:'Ky token i përket një NIPT-i tjetër.',unknown_nipt:'Ky NIPT nuk është në llogari.',provider_error:'Ofruesi nuk u përgjigj si duhet. Provo përsëri pas pak.',
@@ -1211,10 +1214,10 @@ async function fiscalCall(body){
   if(error){let j={code:'upstream_error'};try{const x=await error.context.json();if(x&&x.code)j=x}catch(e){}throw j}
   return data||{};
 }
-async function loadFiscal(){if(!SB)return;try{const {data,error}=await SB.rpc('fiscal_list');if(!error){S.fiscal=Array.isArray(data)?data:[];if(S.view==='company'&&!typing())render();else if(S.view==='detail')render()}}catch(e){}}
+async function loadFiscal(){if(!SB||!FISCAL_ON)return;try{const {data,error}=await SB.rpc('fiscal_list');if(!error){S.fiscal=Array.isArray(data)?data:[];if(S.view==='company'&&!typing())render();else if(S.view==='detail')render()}}catch(e){}}
 const fiscalConn=k=>(S.fiscal||[]).find(f=>f.nipt_key===k);
 function fiscalCard(c){
-  if(!SB)return '';
+  if(!SB||!FISCAL_ON)return '';
   const f=fiscalConn(c.key),k=esc(c.key),busy=S.fiscBusy===c.key,err=S.fiscErr&&S.fiscErr.key===c.key?S.fiscErr.msg:'';
   if(f){const a=f.account||{};return `<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
     <div class="row" style="justify-content:space-between"><b class="small">Fiskalizimi</b><span class="pill ok">I lidhur</span></div>
@@ -1234,7 +1237,7 @@ function fiscalCard(c){
 }
 // Blloku i fiskalizimit te mjeti i shitur.
 function fiscalBlock(v){
-  if(!SB)return '';
+  if(!SB||!FISCAL_ON)return '';
   const f=v.sale.fiscal,conn=fiscalConn(ownerKey(v)),busy=S.fiscBusy===v.id;
   const pay=`<div><span>Pagesa</span><span>${PAY_NAME[v.sale.pay]||PAY_NAME.CASH}</span></div>`;
   if(f&&f.status==='ok')return `<div class="kv" style="margin-top:10px">${pay}

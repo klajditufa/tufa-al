@@ -1,6 +1,6 @@
 // Service worker i thjeshtë: faqja merret nga rrjeti kur ka internet (që përditësimet të dalin
 // menjëherë) dhe nga kopja e ruajtur kur s'ka. Të dhënat vijnë gjithmonë nga Supabase.
-const CACHE = 'autosales-v16';
+const CACHE = 'autosales-v17';
 const SHELL = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'logo.png'];
 
 self.addEventListener('install', (e) => {
