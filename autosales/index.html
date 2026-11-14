@@ -7,8 +7,11 @@
 <meta name="theme-color" content="#0b5c6b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="Import dhe shitje automjetesh: blerje nga fleta doganore me skanim, kosto, shitje, kontratë dhe raporte.">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="AutoSales">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -599,6 +602,7 @@ function viewCompany(){
     ${S.sub.price!=null?`<div><span>Çmimi</span><span>${fmt(num(S.sub.price),0)} ${S.sub.currency==='ALL'?'L':S.sub.currency==='EUR'?'€':esc(S.sub.currency||'')}${/vjet/i.test(S.sub.plan||'')?' në vit':/muj/i.test(S.sub.plan||'')?' në muaj':''}</span></div>`:''}
     <div><span>Vlen deri më</span><span ${subExpired()?'style="color:var(--bad)"':''}>${S.sub.expires_on?dmy(S.sub.expires_on):'pa afat'}</span></div></div>
     <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto '+SUB_CONTACT+'.'}</div></div>`:''}
+  ${installHtml(true)}
   ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
     ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
     <div class="grid2">
@@ -902,6 +906,7 @@ document.addEventListener('click',e=>{
   if(act==='newpass'){doNewPass();return}
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
+  if(act==='install'){doInstall();return}
   if(act==='pwchange'){doChangePass();return}
   if(act==='company'){S.view='company';S.pwErr='';S.pwMsg='';scrollTo(0,0)}
   else if(act==='coadd'){
@@ -1053,6 +1058,29 @@ document.addEventListener('keydown',e=>{
   e.target.blur();
 });
 
+/* ---------- Instalimi si aplikacion (PWA) ---------- */
+const APP_VERSION='1.0';
+let installEvt=null;
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const isIos=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(S.view==='login'||S.view==='company')render()});
+window.addEventListener('appinstalled',()=>{installEvt=null;S.installed=true;if(S.view==='login'||S.view==='company')render()});
+async function doInstall(){if(!installEvt)return;const e=installEvt;installEvt=null;try{e.prompt();await e.userChoice}catch(x){}render()}
+// Te hyrja: vetëm butoni (ose udhëzimi për iPhone). Te Settings: karta e plotë.
+function installHtml(full){
+  if(window.claude&&window.claude.use)return '';
+  if(isStandalone()||S.installed)return full?`<div class="card"><h3>Aplikacioni</h3><div class="small muted">Programi është i instaluar në këtë pajisje. Versioni ${APP_VERSION}.</div></div>`:'';
+  const ios=`Në iPhone ose iPad: hape në Safari, shtyp butonin <b>Share</b> dhe zgjidh <b>Add to Home Screen</b>.`;
+  if(!full){
+    if(installEvt)return `<button class="btn" data-act="install" style="justify-content:center">Instalo programin</button>`;
+    return isIos()?`<div class="small muted" style="text-align:center">${ios}</div>`:'';
+  }
+  return `<div class="card"><h3>Aplikacioni</h3>
+    <div class="small muted">Instaloje që të hapet si program më vete, nga ekrani kryesor ose nga desktopi. Versioni ${APP_VERSION}.</div>
+    ${installEvt?`<div class="row end" style="margin-top:10px"><button class="btn primary" data-act="install">Instalo programin</button></div>`
+    :`<div class="small" style="margin-top:8px">${isIos()?ios:'Në kompjuter (Chrome ose Edge): shtyp ikonën e instalimit në të djathtë të shiritit të adresës. Në Android (Chrome): menuja ⋮ → <b>Install app</b>.'}</div>`}</div>`;
+}
+
 /* ---------- Supabase (kur programi rri në hostin e vet) ---------- */
 let SB=null;
 function viewLogin(){
@@ -1093,6 +1121,7 @@ function viewLogin(){
       <button class="btn primary" data-act="${up?'signup':'login'}" ${S.loginBusy?'disabled':''}>${up?(S.loginBusy?'Po krijohet…':'Krijo llogari'):(S.loginBusy?'Po hyn…':'Hyr')}</button></div>
       ${up?'':`<div style="text-align:center"><button style="${link}" class="small" data-act="login-mode" data-mode="forgot">Harrova fjalëkalimin</button></div>`}
       <div style="text-align:center" class="small">${up?'Ke llogari?':'Nuk ke llogari?'} <button style="${link}" data-act="login-mode" data-mode="${up?'login':'signup'}">${up?'Hyr':'Krijo llogari'}</button></div>`}
+    ${installHtml(false)}
     </div>`;
 }
 function loginMode(m){S.loginMode=m;S.loginErr='';S.loginMsg='';S.loginSent='';const el=$('#l-mail');if(el)S.loginMail=el.value.trim();render()}
@@ -1218,6 +1247,7 @@ async function bootSupabase(cfg){
     const recovery=/type=recovery/.test(location.hash+location.search);
     const {data}=await SB.auth.getSession();
     if(location.hash.includes('access_token')||badLink||/[?&]code=/.test(location.search))history.replaceState(null,'',location.pathname);
+    if(!data.session&&/[?&]signup\b/.test(location.search)){S.loginMode='signup';history.replaceState(null,'',location.pathname)}
     if(!data.session){S.view='login';if(badLink)S.loginErr='Linku i konfirmimit ka skaduar ose është përdorur. Hyr, ose kërko një link të ri.';render();return}
     if(recovery){S.view='login';S.loginMode='newpass';render();return}
   }catch(e){S.view='login';S.loginErr='Nuk u lidh dot me serverin. Kontrollo internetin dhe rifresko faqen.';render();return}
