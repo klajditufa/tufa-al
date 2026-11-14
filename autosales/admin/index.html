@@ -203,7 +203,7 @@ function dialogHtml(c){
       <div class="field"><label for="p-date">Data</label><input id="p-date" type="date" value="${today()}"></div>
       <div class="field"><label for="p-amount">Shuma</label><input id="p-amount" type="number" min="0" step="0.01" inputmode="decimal" value="${b.price==null?'':esc(b.price)}"></div>
       <div class="field"><label for="p-cur">Monedha</label><select id="p-cur">${opt(0,b.currency)}</select></div>
-      <div class="field"><label for="p-months">Për sa muaj</label><input id="p-months" type="number" min="1" max="120" step="1" inputmode="numeric" value="1"></div>
+      <div class="field"><label for="p-months">Për sa muaj</label><input id="p-months" type="number" min="1" max="120" step="1" inputmode="numeric" value="12"></div>
       <div class="field wide"><label for="p-note">Shënim</label><input id="p-note" type="text" placeholder="p.sh. bankë, cash, nr. fature" autocomplete="off"></div>
       <label class="check wide"><input id="p-extend" type="checkbox" checked> Zgjate afatin me kaq muaj</label></div>
       <div class="row end" style="margin-top:12px"><button class="btn primary" data-act="addpay" ${S.dBusy?'disabled':''}>Shto pagesën</button></div></div>
