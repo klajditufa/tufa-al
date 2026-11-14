@@ -8,6 +8,10 @@ shih `Finance/README.md`); `tufa.al/finance` (me shkronjë të vogël) ridrejton
 
 **Përjashtim 2:** `tufa.al/programe/` — programet për shkarkim me kod (dosja `programe/`).
 
+**Përjashtim 3:** `tufa.al/autosales/` — aplikacioni **AutoSales ERP** (PWA, dosja `autosales/`).
+Kodi burim mbahet te repo `tufa-autosales-erp` (dosja `web/`); kur ndryshon atje, kopjohet këtu.
+Të dhënat janë në Supabase (projekti `autosales-erp`); hyrja bëhet me email dhe fjalëkalim.
+
 ## tufa.al/programe — si funksionon
 
 - Lista dhe skedarët ruhen në Supabase (projekti `flota`): tabela `programe` + bucket privat `programe`.

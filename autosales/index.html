@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoSales ERP</title>
+<meta name="theme-color" content="#0b5c6b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AutoSales">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow column built for the phone; summary first, then the list; forms follow the order of the customs sheet. */
+:root{
+  --bg:#eef1f3; --surface:#ffffff; --ink:#14232b; --muted:#5d6d76; --line:#d5dce0;
+  --accent:#0b5c6b; --accent-ink:#ffffff; --tint:#dcebee;
+  --good:#1f7a4d; --warn:#a8620a; --bad:#b3372f;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f171b; --surface:#18242a; --ink:#e6eef1; --muted:#93a4ac; --line:#2a3a42;
+    --accent:#4fb6c6; --accent-ink:#06262c; --tint:#1d3238;
+    --good:#5fc592; --warn:#e0a44a; --bad:#ef7d73; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f171b; --surface:#18242a; --ink:#e6eef1; --muted:#93a4ac; --line:#2a3a42;
+  --accent:#4fb6c6; --accent-ink:#06262c; --tint:#1d3238;
+  --good:#5fc592; --warn:#e0a44a; --bad:#ef7d73; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--body);-webkit-text-size-adjust:100%}
+#app{max-width:760px;margin:0 auto;padding:16px 16px 96px;display:flex;flex-direction:column;gap:16px}
+#app.wide #lbody{width:min(1320px,calc(100vw - 56px));align-self:center}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:22px;font-weight:800;letter-spacing:.2px}
+h2{font-size:19px;font-weight:700}
+h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);letter-spacing:.3px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column}
+.brand span{font-size:12px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:600px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile b{font:700 19px/1.2 var(--display);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile span{font-size:12px;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;align-items:flex-end;gap:0 4px;border-bottom:1px solid var(--line)}
+.tabs button{appearance:none;background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;font:600 14px var(--body);color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.list{display:flex;flex-direction:column;gap:10px}
+.car{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.car.sold{border-left-color:var(--good)}
+.car .name{font:700 17px var(--display)}
+.car .amt{font:700 16px var(--display);text-align:right;font-variant-numeric:tabular-nums}
+.car .sub{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.car .sub.r{text-align:right}
+.pill{display:inline-block;font:600 11.5px var(--body);padding:2px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.pill.stock{color:var(--warn)} .pill.sold{color:var(--good)} .pill.bad{color:var(--bad)} .pill.ok{color:var(--good)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.wide{grid-column:1/-1}
+.field label{font-size:12px;color:var(--muted)}
+input,select{font:400 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+input.auto,select.auto{background:var(--tint);border-color:var(--accent)}
+input:focus-visible,select:focus-visible,button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:20px;height:20px;flex:none;margin-top:1px}
+.btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 14.5px var(--body);padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{background:none}
+.btn[disabled]{opacity:.55;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.grow{flex:1 1 140px;min-width:0}
+.kv{display:flex;flex-direction:column}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.kv div:last-child{border-bottom:0}
+.kv div span:last-child{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.kv div.total{border-top:2px solid var(--ink);border-bottom:0;font:700 17px var(--display);padding-top:10px;margin-top:2px}
+.kv div.off span{color:var(--muted);text-decoration:line-through}
+.scan{border:2px dashed var(--accent);background:var(--tint);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{appearance:none;border:0;background:var(--surface);color:var(--ink);font:600 14px var(--body);padding:9px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.big{font:800 26px/1.15 var(--display);font-variant-numeric:tabular-nums}
+.fab{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%);display:flex;justify-content:center;pointer-events:none}
+.fab .btn{pointer-events:auto;width:100%;max-width:728px;padding:14px;font-size:16px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:600}
+table.numbered th:nth-child(2),table.numbered td:nth-child(2){text-align:left}table.numbered td:first-child{color:var(--muted)}
+tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+.empty{text-align:center;padding:28px 16px;color:var(--muted)}
+#toast{position:fixed;left:16px;right:16px;bottom:84px;margin:0 auto;max-width:520px;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;font-size:14px;display:none;z-index:5}
+.spin{width:16px;height:16px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.carrow{display:flex;gap:8px;align-items:stretch}.carrow .car{flex:1;min-width:0}.carrow .btn{flex:none}
+.paper{background:#fff;color:#16181a;border:1px solid var(--line);border-radius:4px;padding:22px 20px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.paper h4{margin:6px 0 0;font:700 13.5px var(--body)}.paper p{margin:0}.paper .sig{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px;text-align:center}
+input[type=search]::-webkit-search-cancel-button{display:none}
+#qx{position:absolute;right:4px;top:50%;transform:translateY(-50%);appearance:none;border:0;background:none;color:var(--muted);font:400 24px/1 var(--body);width:38px;height:38px;border-radius:50%;cursor:pointer}#qx:hover{color:var(--ink);background:var(--tint)}#qx[hidden]{display:none}
+.sugg{position:absolute;left:0;right:0;top:100%;z-index:6;margin-top:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:230px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.sugg div{padding:8px 10px;cursor:pointer}.sugg div.on{background:var(--accent);color:var(--accent-ink)}
+.datebtn{appearance:none;display:flex;align-items:center;gap:10px;width:100%;font:500 16px var(--body);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);cursor:pointer;text-align:left}
+.datebtn:hover{border-color:var(--accent)}.datebtn svg{flex:none;color:var(--accent)}
+.datebox{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:text}.datebox:hover{border-color:var(--accent)}.datebox:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.datebox input{border:0;background:none;outline:none;padding-left:4px;font-weight:500}.datebox button{appearance:none;border:0;background:none;padding:9px 6px 9px 10px;color:var(--accent);cursor:pointer;display:flex}
+.cal{position:absolute;z-index:7;right:0;top:100%;margin-top:4px;width:296px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:8px}
+.cal .hd{display:flex;align-items:center;justify-content:space-between;font:700 15px var(--display)}
+.cal .hd button{appearance:none;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;width:36px;height:34px;font-size:18px;cursor:pointer}
+.cal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal .g span{font-size:11.5px;color:var(--muted);padding:2px 0}
+.cal .g button{appearance:none;border:1px solid transparent;background:none;color:var(--ink);font:500 14.5px var(--body);height:36px;border-radius:8px;cursor:pointer;font-variant-numeric:tabular-nums}
+.cal .g button:hover{background:var(--tint)}.cal .g button.today{border-color:var(--accent)}
+.cal .g button.sel{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.exp{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.exp button{appearance:none;border:0;background:none;color:var(--bad);font:600 13px var(--body);cursor:pointer;padding:4px 6px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="config.js"></script>
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function num(v){
+  if(typeof v==='number')return isFinite(v)?v:0;
+  let s=String(v??'').replace(/\s/g,'');if(!s)return 0;
+  if(s.includes(',')&&s.includes('.'))s=s.replace(/,/g,'');
+  else if(s.includes(','))s=/,\d{3}(,|$)/.test(s)?s.replace(/,/g,''):s.replace(',','.');
+  const n=parseFloat(s);return isFinite(n)?n:0;
+}
+const fmt=(n,d=0)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const lek=n=>fmt(n)+' L';
+const dmy=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?`${m[3]}.${m[2]}.${m[1]}`:(s||'')};
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const VAT_SALE=0.20;
+
+const S={view:'list',tab:'stock',id:null,vehicles:[],loaded:false,slow:false,db:null,sample:null,imgLimits:null,
+  boa:null,cal:{open:false,y:0,m:0},q:'',rep:{year:String(new Date().getFullYear()),month:'',mode:null},settings:{default_pct:'',sellers:{}},draft:null,auto:new Set(),scan:{busy:false,msg:'',err:''},confirmDel:false};
+
+// Kursi zyrtar i Bankës së Shqipërisë, i ruajtur te rates/boa. Nuk përdoret kur është më i vjetër se 5 ditë.
+function boaAge(){const b=S.boa;if(!b||!/^\d{4}-\d{2}-\d{2}$/.test(b.date||''))return 99;return Math.round((new Date(today())-new Date(b.date))/864e5)}
+function boaRate(code){const b=S.boa,r=b&&b.rates&&num(b.rates[code]);return r>0&&boaAge()<=5?r:0}
+function calc(v){
+  const purchase=num(v.invoice_value)*(v.currency==='ALL'?1:num(v.rate));
+  const freight=num(v.freight_all),duty=num(v.duty),vat=num(v.vat),other=num(v.other_fees);
+  const exp=(v.expenses||[]).reduce((a,e)=>a+num(e.amount),0);
+  const vatInCost=v.vat_deductible===false?vat:0;
+  const cost=purchase+freight+duty+other+vatInCost+exp;
+  const p=v.pricing||{};
+  const own=p.value!==''&&p.value!==undefined&&p.value!==null,std=num(S.settings.default_pct);
+  const usesStd=p.mode!=='val'&&!own&&std>0;
+  const markup=p.mode==='val'?num(p.value):cost*(own?num(p.value):std)/100;
+  const price=cost+markup;
+  const sold=v.status==='sold';
+  const salePrice=sold?num(v.sale&&v.sale.price):0;
+  return {purchase,freight,duty,vat,other,exp,vatInCost,cost,markup,price,priceVat:price*(1+VAT_SALE),
+    salePrice,profit:sold?salePrice-cost:0,customsPaid:duty+vat+other,customsCost:duty+other,taxBase:num(v.tax_base)||num(v.customs_value)+duty,usesStd,sold};
+}
+
+/* ---------- storage ---------- */
+const LS='autosales.vehicles';
+function loadLocal(){try{S.vehicles=JSON.parse(localStorage.getItem(LS)||'[]')}catch(e){S.vehicles=[]}try{S.settings=Object.assign({default_pct:'',sellers:{}},JSON.parse(localStorage.getItem(LSS)||'{}'))}catch(e){}try{S.boa=JSON.parse(localStorage.getItem('autosales.boa')||'null')}catch(e){}}
+const queues={};
+function save(v){
+  const i=S.vehicles.findIndex(x=>x.id===v.id);
+  if(i>=0)S.vehicles[i]=v;else S.vehicles.push(v);
+  if(S.db){
+    const data=JSON.parse(JSON.stringify(v));delete data.id;
+    queues[v.id]=(queues[v.id]||Promise.resolve()).then(()=>S.db.doc('vehicles/'+v.id).set(data))
+      .catch(e=>toast(e&&e.code==='invalid_argument'?'Nuk ke të drejtë shkrimi në këtë faqe.':'Ruajtja dështoi. Provo përsëri.'));
+  }else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
+}
+function remove(id){
+  S.vehicles=S.vehicles.filter(x=>x.id!==id);
+  if(S.db)S.db.doc('vehicles/'+id).delete().catch(()=>toast('Fshirja dështoi.'));
+  else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
+}
+const LSS='autosales.settings';
+function saveSettings(){
+  const data={default_pct:S.settings.default_pct===''?'':num(S.settings.default_pct),eur_rate:num(S.settings.eur_rate)||'',company:S.settings.company||'',sellers:JSON.parse(JSON.stringify(S.settings.sellers||{}))};
+  if(S.db)S.db.doc('settings/main').set(data).catch(()=>toast('Ruajtja e Marzhit të Fitimit dështoi.'));
+  else{try{localStorage.setItem(LSS,JSON.stringify(data))}catch(e){}}
+}
+const typing=()=>{const a=document.activeElement;return !!a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)};
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',4000)}
+
+/* ---------- views ---------- */
+function render(){
+  const app=$('#app');
+  if(S.view==='login')app.innerHTML=viewLogin();
+  else if(S.view==='form')app.innerHTML=viewForm();
+  else if(S.view==='detail')app.innerHTML=viewDetail();
+  else if(S.view==='sell')app.innerHTML=viewSell();
+  else if(S.view==='contract')app.innerHTML=viewContract();
+  else if(S.view==='company')app.innerHTML=viewCompany();
+  else app.innerHTML=viewList();
+  app.classList.toggle('wide',S.view==='list'&&S.tab==='report');
+  if(S.view==='form')updateFormSummary();
+  if(S.view==='sell')updateSellOut();
+  if(S.view==='contract')prebuildShare();
+}
+
+function header(){
+  const co=mainCompany()||{},sub=[co.nipt?'NIPT '+co.nipt:'',co.address].filter(Boolean).join(' · ');
+  return `<div class="top" style="flex-wrap:nowrap"><div class="brand" style="min-width:0"><h1 style="overflow-wrap:anywhere">${esc(co.name||'AutoSales ERP')}</h1><span>${esc(sub||'Import dhe shitje automjetesh')}</span></div>
+    <button class="btn ghost" data-act="company" aria-label="Settings" title="Settings" style="padding:6px;border:0;color:var(--muted);flex:none;align-self:flex-start">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div>`;
+}
+
+function match(v){
+  const q=S.q.trim().toLowerCase();if(!q)return true;
+  const hay=[v.make_model,v.year,v.vin,v.supplier,v.color,v.decl_no,v.invoice_no,v.sale&&v.sale.buyer].join(' ').toLowerCase();
+  return q.split(/\s+/).every(w=>hay.includes(w));
+}
+function allCalc(){return S.vehicles.map(v=>({v,c:calc(v)})).sort((a,b)=>String(b.v.created||'').localeCompare(String(a.v.created||'')))}
+function listBody(){
+  if(!S.loaded)return `<div class="empty">${S.slow?'Të dhënat nuk po arrihen ende. Faqja vazhdon të provojë.':'Po ngarkohet…'}</div>`;
+  const all=allCalc(),found=all.filter(x=>match(x.v)),q=S.q.trim();
+  if(S.tab==='report')return viewReport(found,all.length);
+  const base=all.filter(x=>S.tab==='stock'?!x.c.sold:x.c.sold),rows=found.filter(x=>S.tab==='stock'?!x.c.sold:x.c.sold);
+  if(rows.length)return (q?`<div class="small muted">${rows.length} nga ${base.length} mjete</div>`:'')+`<div class="list">${rows.map(card).join('')}</div>`;
+  if(q&&base.length)return `<div class="empty">Asnjë mjet nuk përputhet me “${esc(q)}”.</div>`;
+  return `<div class="empty">${S.tab==='stock'?'Asnjë mjet në stok. Shto blerjen e parë duke skanuar fletën doganore.':'Ende asnjë shitje.'}</div>`;
+}
+function tiles(){
+  const all=allCalc(),stock=all.filter(x=>!x.c.sold),yr=String(new Date().getFullYear()),soldY=all.filter(x=>x.c.sold&&String(x.v.sale.date||'').startsWith(yr)),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+  return `<div class="tile"><b>${stock.length}</b><span>Mjete në stok</span></div>
+    <div class="tile"><b>${lek(sum(stock,x=>x.c.cost))}</b><span>Vlera e stokut (kosto)</span></div>
+    <div class="tile"><b>${soldY.length}</b><span>Mjete të shitura në ${yr}</span></div>
+    <div class="tile"><b>${lek(sum(soldY,x=>x.c.profit))}</b><span>Fitimi nga shitjet ${yr}</span></div>`;
+}
+function viewList(){
+  return header()+`
+  <div class="tiles" id="tiles">${tiles()}</div>
+  <div class="tabs" role="tablist">
+    ${[['stock','Stoku'],['sold','Shitur'],['report','Raporti']].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join('')}
+    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:4px 0">
+      <label for="std" class="small" style="font-weight:600;white-space:nowrap">Marzhi Fitimit</label>
+      <input id="std" data-std type="text" inputmode="decimal" value="${S.settings.default_pct===''||S.settings.default_pct==null?'':esc(S.settings.default_pct)+'%'}" placeholder="15%" autocomplete="off" style="width:70px;text-align:right;padding:5px 8px;font-size:16px"></span>
+  </div>
+  <div class="field"><label for="q">Kërko sipas emrit, modelit, shasisë ose blerësit</label><div style="position:relative"><input id="q" data-q type="search" value="${esc(S.q)}" placeholder="p.sh. Audi, 1043551, Seobuk" autocomplete="off" style="padding-right:44px">
+    <button type="button" id="qx" data-act="qclear" aria-label="Fshi kërkimin" ${S.q?'':'hidden'}>×</button></div></div>
+  <div id="lbody" style="display:flex;flex-direction:column;gap:10px">${listBody()}</div>
+  <div class="fab"><button class="btn primary" data-act="new">+ Blerje e re</button></div>`;
+}
+function updateList(){const b=$('#lbody'),t=$('#tiles');if(b)b.innerHTML=listBody();if(t)t.innerHTML=tiles()}
+
+function card({v,c}){
+  const right=c.sold?`<div class="amt">${lek(c.salePrice)}</div>`:`<div class="amt">${lek(c.cost)}</div>`;
+  const sub2=c.sold?`Fitimi ${lek(c.profit)}`:(c.markup?`Çmimi ${lek(c.price)} + TVSH`:'Pa çmim shitjeje');
+  return `<div class="carrow"><button class="car ${c.sold?'sold':''}" data-act="open" data-id="${esc(v.id)}">
+    <div class="name">${esc(v.make_model||'Mjet pa emër')} ${esc(v.year||'')}</div>${right}
+    <div class="sub"><span class="mono">${esc(v.vin||'pa VIN')}</span> · ${esc(v.supplier||'')}</div>
+    <div class="sub r">${c.sold?'Shitur · ':'Kosto · '}${sub2}</div>
+  </button>${c.sold?'':`<button class="btn primary" data-act="sellview" data-id="${esc(v.id)}">Shitje</button>`}</div>`;
+}
+
+const MONTHS=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
+const buyDate=v=>v.decl_date||v.invoice_date||String(v.created||'').slice(0,10);
+const inPeriod=d=>{const r=S.rep;if(!r.year)return true;return String(d||'').startsWith(r.year+(r.month?'-'+r.month:''))};
+function viewReport(all,total){
+  if(!total)return `<div class="empty">Raporti mbushet sapo të regjistrohet mjeti i parë.</div>`;
+  const r=S.rep,t=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+  const years=[...new Set(S.vehicles.flatMap(v=>[buyDate(v),v.sale&&v.sale.date]).filter(Boolean).map(d=>String(d).slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const bought=all.filter(x=>inPeriod(buyDate(x.v))),sales=all.filter(x=>x.c.sold&&inPeriod(x.v.sale.date));
+  const mode=r.mode||(S.vehicles.some(v=>v.status==='sold')?'sales':'purch');
+  const label=r.year?(r.month?MONTHS[+r.month-1]+' ':'')+r.year:'Të gjitha periudhat';
+  const B='border-left:1px solid var(--line)',E='border-right:1px solid var(--line)';
+  const car=v=>`<td>${esc(v.make_model||'')} ${esc(v.year||'')}<br><span class="mono muted small">${esc(v.vin||'')}</span></td>`;
+  const controls=`<div class="row">
+    <div class="field" style="flex:0 1 130px"><label for="r-year">Viti</label><select id="r-year" data-rep="year" ${mode==='stock'?'disabled':''}><option value="">Të gjitha</option>${years.map(y=>`<option${r.year===y?' selected':''}>${y}</option>`).join('')}</select></div>
+    <div class="field" style="flex:0 1 150px"><label for="r-month">Muaji</label><select id="r-month" data-rep="month" ${r.year&&mode!=='stock'?'':'disabled'}><option value="">Gjithë viti</option>${MONTHS.map((m,i)=>{const k=String(i+1).padStart(2,'0');return `<option value="${k}"${r.month===k?' selected':''}>${m}</option>`}).join('')}</select></div>
+    <div class="seg" role="group" aria-label="Lloji i raportit" style="align-self:flex-end">
+      <button data-act="repmode" data-v="sales" aria-pressed="${mode==='sales'}">Shitjet</button>
+      <button data-act="repmode" data-v="purch" aria-pressed="${mode==='purch'}">Blerjet</button>
+      <button data-act="repmode" data-v="stock" aria-pressed="${mode==='stock'}">Në stok</button></div>
+    <button class="btn" data-act="xlsx" style="align-self:flex-end;margin-left:auto">Eksporto në Excel</button></div>`;
+  const summary=`<div class="kv">
+    <div><span>Blerje: ${bought.length} mjete, kosto</span><span>${lek(t(bought,x=>x.c.cost))}</span></div>
+    <div><span>TVSH e paguar në doganë</span><span>${lek(t(bought,x=>x.c.vat))}</span></div>
+    <div><span>Shitje: ${sales.length} mjete, pa TVSH</span><span>${lek(t(sales,x=>x.c.salePrice))}</span></div>
+    <div><span>TVSH e shitjeve 20%</span><span>${lek(t(sales,x=>x.c.salePrice)*VAT_SALE)}</span></div>
+    <div class="total"><span>Fitimi i periudhës</span><span>${lek(t(sales,x=>x.c.profit))}</span></div></div>`;
+  let table;
+  if(mode==='stock'){
+    const st=all.filter(x=>!x.c.sold),days=v=>{const d=buyDate(v);return d?Math.max(0,Math.round((new Date(today())-new Date(d))/864e5)):''};
+    table=st.length?`<div class="tablewrap"><table class="numbered">
+    <thead><tr><th>Nr.</th><th>Mjeti</th><th>Data e blerjes</th><th>Ditë në stok</th><th>Kosto</th><th>Marzhi Fitimit</th><th>Çmimi pa TVSH</th><th>Çmimi me TVSH</th></tr></thead>
+    <tbody>${st.slice().sort((a,b)=>String(buyDate(a.v)).localeCompare(String(buyDate(b.v)))).map(({v,c},i)=>`<tr><td>${i+1}</td>${car(v)}<td>${dmy(buyDate(v))}</td><td>${days(v)}</td><td>${fmt(c.cost)}</td><td>${fmt(c.markup)}</td><td>${c.markup?fmt(c.price):''}</td><td>${c.markup?fmt(c.priceVat):''}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>${st.length}</td><td>Gjithsej (lekë)</td><td></td><td></td><td>${fmt(t(st,x=>x.c.cost))}</td><td>${fmt(t(st,x=>x.c.markup))}</td><td>${fmt(t(st,x=>x.c.markup?x.c.price:0))}</td><td>${fmt(t(st,x=>x.c.markup?x.c.priceVat:0))}</td></tr></tfoot></table></div>`
+    :`<div class="empty">Asnjë mjet në stok.</div>`;
+  }else if(mode==='sales'){
+    table=sales.length?`<div class="tablewrap"><table class="numbered">
+    <thead><tr><th>Nr.</th><th>Mjeti</th><th>Data</th><th>Blerësi</th><th>Kosto</th><th>Shitja pa TVSH</th><th>TVSH 20%</th><th>Fitimi</th></tr></thead>
+    <tbody>${sales.slice().sort((a,b)=>String(a.v.sale.date).localeCompare(String(b.v.sale.date))).map(({v,c},i)=>`<tr><td>${i+1}</td>${car(v)}<td>${dmy(v.sale.date)}</td><td>${esc(v.sale.buyer||'')}</td><td>${fmt(c.cost)}</td><td>${fmt(c.salePrice)}</td><td>${fmt(c.salePrice*VAT_SALE)}</td><td>${fmt(c.profit)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>${sales.length}</td><td>Gjithsej (lekë)</td><td></td><td></td><td>${fmt(t(sales,x=>x.c.cost))}</td><td>${fmt(t(sales,x=>x.c.salePrice))}</td><td>${fmt(t(sales,x=>x.c.salePrice)*VAT_SALE)}</td><td>${fmt(t(sales,x=>x.c.profit))}</td></tr></tfoot></table></div>`
+    :`<div class="empty">Asnjë shitje në këtë periudhë.</div>`;
+  }else{
+    table=bought.length?`<div class="tablewrap"><table class="numbered">
+    <thead><tr><th>Nr.</th><th>Mjeti</th><th>Data</th><th>Blerja</th><th>Transporti</th><th>Paguar në doganë</th><th>Shpenzime</th><th>Kosto</th><th>Gjendja</th></tr></thead>
+    <tbody>${bought.slice().sort((a,b)=>String(buyDate(a.v)).localeCompare(String(buyDate(b.v)))).map(({v,c},i)=>`<tr><td>${i+1}</td>${car(v)}<td>${dmy(buyDate(v))}</td><td>${fmt(c.purchase)}</td><td>${fmt(c.freight)}</td><td>${fmt(c.customsPaid)}</td><td>${fmt(c.exp)}</td><td>${fmt(c.cost)}</td><td style="color:var(${c.sold?'--good':'--warn'})">${c.sold?'shitur':'në stok'}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>${bought.length}</td><td>Gjithsej (lekë)</td><td></td><td>${fmt(t(bought,x=>x.c.purchase))}</td><td>${fmt(t(bought,x=>x.c.freight))}</td><td>${fmt(t(bought,x=>x.c.customsPaid))}</td><td>${fmt(t(bought,x=>x.c.exp))}</td><td>${fmt(t(bought,x=>x.c.cost))}</td><td></td></tr></tfoot></table></div>
+    <p class="small muted" style="margin:0">Paguar në doganë është tarifa e skanimit bashkë me TVSH-në. Kosto e përfshin vetëm tarifën; në Excel dalin të ndara.</p>`
+    :`<div class="empty">Asnjë blerje në këtë periudhë.</div>`;
+  }
+  return `<div class="card">${controls}</div>
+  <div class="card"><h3>${mode==='stock'?'Mjetet në stok, gjendja sot':(mode==='sales'?'Shitjet sipas datës së shitjes':'Blerjet sipas datës së deklaratës doganore')+' · '+esc(label)}${S.q.trim()?' · kërkimi “'+esc(S.q.trim())+'”':''}</h3>${table}</div>`;
+}
+
+function reportExportData(){
+  const all=allCalc().filter(x=>match(x.v)),r=S.rep,mode=r.mode||(S.vehicles.some(v=>v.status==='sold')?'sales':'purch');
+  const period=r.year?(r.month?MONTHS[+r.month-1]+' ':'')+r.year:'Të gjitha periudhat';
+  const D=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):''};
+  const name=v=>[v.make_model,v.year].filter(Boolean).join(' '),R=Math.round,by=f=>(a,b)=>String(f(a)).localeCompare(String(f(b)));
+  const q=S.q.trim()?' · kërkimi: '+S.q.trim():'',made=' · nxjerrë më '+dmy(today());
+  if(mode==='stock'){
+    const st=all.filter(x=>!x.c.sold).sort(by(x=>buyDate(x.v)));
+    return {file:'Raporti-Ne-stok-'+today(),sheet:'Në stok',title:'Mjetet në stok',sub:'Gjendja më '+dmy(today())+q,
+      cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',14],['Ditë në stok','q',11],['Kosto','n',14],['Marzhi Fitimit','n',15],['Çmimi pa TVSH','n',15],['Çmimi me TVSH','n',15]],
+      rows:st.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),buyDate(v)?Math.max(0,R((new Date(today())-new Date(buyDate(v)))/864e5)):'',R(c.cost),R(c.markup),c.markup?R(c.price):0,c.markup?R(c.priceVat):0])};
+  }
+  if(mode==='sales'){
+    const sl=all.filter(x=>x.c.sold&&inPeriod(x.v.sale.date)).sort(by(x=>x.v.sale.date));
+    return {file:'Raporti-Shitjet-'+(r.year?r.year+(r.month?'-'+r.month:''):'te-gjitha'),sheet:'Shitjet',title:'Shitjet e mjeteve',sub:period+q+made,
+      cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e shitjes','d',14],['Blerësi','s',24],['Qyteti','s',14],['Kosto','n',14],['Shitja pa TVSH','n',15],['TVSH 20%','n',13],['Shitja me TVSH','n',15],['Fitimi','n',13]],
+      rows:sl.map(({v,c})=>[0,name(v),v.vin||'',D(v.sale.date),v.sale.buyer||'',v.sale.city||'',R(c.cost),R(c.salePrice),R(c.salePrice*VAT_SALE),R(c.salePrice*(1+VAT_SALE)),R(c.profit)])};
+  }
+  const bo=all.filter(x=>inPeriod(buyDate(x.v))).sort(by(x=>buyDate(x.v)));
+  return {file:'Raporti-Blerjet-'+(r.year?r.year+(r.month?'-'+r.month:''):'te-gjitha'),sheet:'Blerjet',title:'Blerjet e mjeteve',sub:period+q+made,
+    cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e deklaratës','d',15],['Nr. i deklaratës','s',15],['Baza e taksës','n',14],['TVSH','n',13],['Totali (baza + TVSH)','n',16],['Regjimi','s',10],['Shitësi','s',28],['Blerja','n',13],['Transporti','n',13],['Tarifa e skanimit (kosto)','n',16],['Shpenzime','n',12],['Kosto','n',14],['Gjendja','s',10]],
+    rows:bo.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),v.decl_no||'',R(c.taxBase),R(c.vat),R(c.taxBase+c.vat),v.regime||'',v.supplier||'',R(c.purchase),R(c.freight),R(c.customsCost),R(c.exp),R(c.cost),c.sold?'shitur':'në stok'])};
+}
+let xlsBusy=false;
+async function exportReport(){
+  if(xlsBusy)return;const d=reportExportData();
+  if(!d.rows.length){toast('Ky raport është bosh, s\'ka çfarë të eksportohet.');return}
+  xlsBusy=true;
+  try{
+    if(!window.ExcelJS)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+    const wb=new window.ExcelJS.Workbook();wb.creator='AutoSales ERP';
+    const ws=wb.addWorksheet(d.sheet,{views:[{state:'frozen',ySplit:4,xSplit:2}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
+    ws.getCell('A1').value=d.title;ws.getCell('A1').font={name:'Calibri',size:16,bold:true,color:{argb:'FF0B5C6B'}};
+    ws.getCell('A2').value=d.sub;ws.getCell('A2').font={name:'Calibri',size:10,color:{argb:'FF5D6D76'}};
+    const H=4,F=H+1,n=d.rows.length;
+    ws.addTable({name:'Raporti',ref:'A'+H,headerRow:true,totalsRow:true,style:{theme:'TableStyleLight1',showRowStripes:false},
+      columns:d.cols.map(([h,t],i)=>Object.assign({name:h,filterButton:true},i===0?{totalsRowLabel:'Gjithsej'}:i===1?{totalsRowFunction:'count',totalsRowResult:n}:t==='n'?{totalsRowFunction:'sum',totalsRowResult:d.rows.reduce((s,r)=>s+(+r[i]||0),0)}:{})),
+      rows:d.rows.map((row,ri)=>row.map((val,ci)=>d.cols[ci][1]==='i'?{formula:'SUBTOTAL(103,B$'+F+':B'+(F+ri)+')',result:ri+1}:val))});
+    d.cols.forEach(([h,t,w],i)=>{
+      const col=ws.getColumn(i+1);col.width=w;
+      for(let r=F;r<=F+n;r++){const c=ws.getCell(r,i+1);
+        if(t==='n')c.numFmt='#,##0';else if(t==='d')c.numFmt='dd.mm.yyyy';
+        c.alignment={horizontal:t==='n'||t==='q'?'right':t==='i'||t==='d'?'center':'left',vertical:'middle',indent:t==='s'?1:0};
+        const last=r===F+n,line={style:'thin',color:{argb:'FFD5DCE0'}};
+        c.border={bottom:line,left:line,right:line,top:last?{style:'medium',color:{argb:'FF14232B'}}:line};
+        if(h==='Regjimi'&&!last&&c.value==='IM7'){c.font={bold:true,color:{argb:'FFB3372F'}};c.note='IM7 është magazinë doganore. Për shitje duhet deklarata IM4.'}
+        if(h==='Gjendja'&&!last)c.font={color:{argb:c.value==='shitur'?'FF1F7A4D':'FFA8620A'}};
+        if(last){c.font={bold:true};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDCEBEE'}}}
+        else if((r-F)%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F6F7'}};}
+      const hc=ws.getCell(H,i+1);hc.alignment={horizontal:'center',vertical:'middle',wrapText:true};hc.font={bold:true,color:{argb:'FFFFFFFF'}};hc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B5C6B'}};hc.border={left:{style:'thin',color:{argb:'FFFFFFFF'}},right:{style:'thin',color:{argb:'FFFFFFFF'}}};
+    });
+    ws.getRow(H).height=32;
+    const blob=new Blob([await wb.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),file=d.file+'.xlsx';
+    const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl)await dl.save({filename:file,data:blob});
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file;document.body.appendChild(a);a.click();a.remove()}
+  }catch(e){if(!(e&&e.code==='declined'))toast(e&&e.code==='rate_limited'?'Prit pak dhe provo përsëri.':'Excel-i nuk u krijua. Provo përsëri.');console.error(e)}
+  xlsBusy=false;
+}
+
+/* ---------- form ---------- */
+const GROUPS=[
+ ['Mjeti',[['make_model','Marka dhe modeli'],['year','Viti i prodhimit','n'],['vin','Nr. i shasisë (VIN)','wide'],['color','Ngjyra'],['engine_cc','Cilindrata (cc)','n'],['fuel','Karburanti']]],
+ ['Shitësi dhe dokumentet',[['supplier','Shitësi / eksportuesi'],['supplier_country','Shteti'],['importer','Importuesi'],['importer_nipt','NIPT i importuesit'],['invoice_no','Nr. i faturës'],['invoice_date','Data e faturës','d'],['decl_no','Nr. i deklaratës doganore'],['decl_date','Data e deklaratës','d'],['regime','Regjimi i deklaratës (kutia 1)','reg']]],
+ ['Vlera e blerjes',[['currency','Monedha','cur'],['invoice_value','Vlera e faturës (në monedhë)','n'],['rate','Kursi i këmbimit','n'],['freight_all','Transporti (lekë)','n']]],
+ ['Dogana',[['adjustment','Koeficienti i rregullimit','n'],['customs_value','Vlera doganore / statistikore (lekë)','n'],['tax_base','Baza e taksës, kutia 47 (lekë)','n'],['duty','Taksa doganore DOG (lekë)','n'],['vat','TVSH e importit (lekë)','n'],['other_fees','Tarifa e skanimit dhe taksa të tjera (lekë)','n']]]
+];
+function viewForm(){
+  const d=S.draft,isNew=!S.vehicles.some(x=>x.id===d.id);
+  const inp=([k,label,t])=>{
+    const cls=(t==='wide'?'field wide':'field'),a=S.auto.has(k)?' class="auto"':'';
+    if(t==='reg')return `<div class="${cls}"><label for="f-${k}">${label}</label><select id="f-${k}" data-f="${k}"${a}>${['','IM4','IM7'].concat(d[k]&&!['IM4','IM7'].includes(d[k])?[d[k]]:[]).map(c=>`<option value="${c}"${(d[k]||'')===c?' selected':''}>${c||'pa zgjedhur'}</option>`).join('')}</select></div>`;
+    if(t==='cur')return `<div class="${cls}"><label for="f-${k}">${label}</label><select id="f-${k}" data-f="${k}"${a}>${['USD','EUR','ALL','GBP','CHF','KRW','JPY'].map(c=>`<option${d[k]===c?' selected':''}>${c}</option>`).join('')}</select></div>`;
+    return `<div class="${cls}"><label for="f-${k}">${label}</label><input id="f-${k}" data-f="${k}"${a} ${t==='d'?'type="date"':t==='n'?'type="text" inputmode="decimal"':'type="text"'} value="${esc(d[k]??'')}" autocomplete="off"></div>`;
+  };
+  const canScan=!!(S.sample&&S.imgLimits);
+  const scan=`<div class="scan">
+    <div><h2>Skano fletën doganore</h2><div class="small">Fotografo fletën doganore dhe, po deshe, faturën e shitësit. Pranohet edhe PDF nga skaneri (lexohet faqja e parë). Fushat plotësohen vetë; kontrolloji para ruajtjes.</div></div>
+    ${canScan?`<div class="row"><label class="btn primary" for="scanfile" ${S.scan.busy?'aria-disabled="true"':''}>Fotografo ose zgjidh foto / PDF</label>
+      <input id="scanfile" type="file" accept="${esc((S.imgLimits.mediaTypes||['image/*']).concat('application/pdf').join(','))}" multiple hidden ${S.scan.busy?'disabled':''}>
+      ${S.scan.busy?`<span class="row small"><span class="spin"></span>${esc(S.scan.msg)}</span><button class="btn ghost" data-act="scanstop">Ndalo</button>`:''}</div>`
+     :`<div class="small muted">${S.sample===null&&window.claude?'Po kontrollohet skanimi…':'Skanimi punon kur faqja hapet brenda Claude. Tani plotëso fushat me dorë.'}</div>`}
+    ${S.scan.err?`<div class="small" style="color:var(--bad)">${esc(S.scan.err)}</div>`:''}
+    ${S.auto.size&&!S.scan.busy?`<div class="small">U plotësuan ${S.auto.size} fusha nga skanimi. Janë të ngjyrosura më poshtë.</div>`:''}
+  </div>`;
+  return `<div class="top"><h1>${isNew?'Blerje e re':'Ndrysho blerjen'}</h1><button class="btn ghost" data-act="cancel">Anulo</button></div>
+  ${scan}
+  ${GROUPS.map(([t,f])=>`<div class="card"><h3>${t}</h3><div class="grid2">${f.map(inp).join('')}</div>
+    ${t==='Dogana'?`<label class="check"><input type="checkbox" id="f-vatded" data-f="vat_deductible" ${d.vat_deductible!==false?'checked':''}><span>TVSH-ja e importit është e zbritshme (nuk hyn në koston e mjetit)</span></label>`:''}</div>`).join('')}
+  <div class="card" id="fsum"></div>
+  <div class="row end"><button class="btn" data-act="cancel">Anulo</button><button class="btn primary" data-act="savedraft">Ruaj blerjen</button></div>`;
+}
+function niptMismatch(d){
+  const n=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''),co=mainCompany(),a=n(d&&d.importer_nipt),b=n(co&&co.nipt);
+  return a&&b&&a!==b?`NIPT-i ${a}${d.importer?' ('+d.importer+')':''} nuk i përket kompanisë suaj, ${co.name||''} ${b}.`:'';
+}
+function updateFormSummary(){
+  const el=$('#fsum');if(!el)return;const d=S.draft,c=calc(d);
+  const adj=num(d.adjustment)||1,cv=num(d.customs_value),exp=(c.purchase+c.freight)*adj;
+  const checks=[];
+  if(cv>0&&c.purchase>0){const ok=Math.abs(exp-cv)/cv<0.01;checks.push(`<span class="pill ${ok?'ok':'bad'}">${ok?'Vlera doganore përputhet':'Vlera doganore nuk përputhet: pritej '+fmt(exp)}</span>`)}
+  const nm=niptMismatch(d);if(nm)checks.push(`<span class="pill bad" style="white-space:normal">${esc(nm)}</span>`);
+  if(d.regime==='IM7')checks.push(`<span class="pill bad">IM7 është magazinë doganore. Për shitje duhet deklarata IM4.</span>`);
+  if(c.taxBase>0&&c.vat>0){const ev=0.2*c.taxBase,ok=Math.abs(ev-c.vat)/c.vat<0.01;checks.push(`<span class="pill ${ok?'ok':'bad'}">${ok?'TVSH 20% përputhet':'TVSH ndryshon nga 20%: pritej '+fmt(ev)}</span>`)}
+  el.innerHTML=`<h3>Kosto e mjetit</h3><div class="kv">
+    <div><span>Blerja (${fmt(num(d.invoice_value),2)} ${esc(d.currency||'')} × ${d.currency==='ALL'?1:fmt(num(d.rate),3)})</span><span>${lek(c.purchase)}</span></div>
+    <div><span>Transporti</span><span>${lek(c.freight)}</span></div>
+    <div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>
+    <div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>
+    <div class="${c.vatInCost?'':'off'}"><span>TVSH e importit${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
+    <div class="total"><span>Kosto gjithsej</span><span>${lek(c.cost)}</span></div></div>
+    ${checks.length?`<div class="row">${checks.join('')}</div>`:''}`;
+}
+
+/* ---------- detail ---------- */
+function viewDetail(){
+  const v=S.vehicles.find(x=>x.id===S.id);
+  if(!v)return header()+`<div class="empty">Mjeti nuk u gjet.</div><button class="btn" data-act="back">Kthehu te lista</button>`;
+  const c=calc(v),p=v.pricing||{mode:'pct',value:''};
+  const info=[['Shitësi',[v.supplier,v.supplier_country].filter(Boolean).join(', ')],['Importuesi',[v.importer,v.importer_nipt].filter(Boolean).join(' · ')],
+    ['Fatura',[v.invoice_no,dmy(v.invoice_date)].filter(Boolean).join(' · ')],['Deklarata doganore',[v.decl_no,dmy(v.decl_date),v.regime].filter(Boolean).join(' · ')],
+    ['Motori',[v.engine_cc?v.engine_cc+' cc':'',v.fuel].filter(Boolean).join(' · ')],['Ngjyra',v.color]].filter(r=>r[1]);
+  const pricing=c.sold?'':`<div class="card"><h3>Çmimi i shitjes</h3>
+    <div class="row"><div class="seg" role="group" aria-label="Mënyra e marzhit">
+      <button data-act="pmode" data-v="pct" aria-pressed="${p.mode!=='val'}">% mbi koston</button>
+      <button data-act="pmode" data-v="val" aria-pressed="${p.mode==='val'}">Vlerë në lekë</button></div>
+      <div class="field grow"><label for="p-val">${p.mode==='val'?'Marzhi Fitimit (lekë)':'Marzhi Fitimit (%)'}</label><input id="p-val" type="text" inputmode="decimal" value="${esc(p.value??'')}" data-p="value" autocomplete="off" placeholder="${p.mode!=='val'&&num(S.settings.default_pct)?esc(S.settings.default_pct)+'% i përgjithshëm':''}"></div>
+      <div class="field grow"><label for="p-eur">Kursi EUR (opsional)</label><input id="p-eur" type="text" inputmode="decimal" value="${esc(p.eur_rate??'')}" data-p="eur_rate" autocomplete="off" placeholder="${boaRate('EUR')?'BSH '+fmt(boaRate('EUR'),2):''}"></div></div>
+    <div id="pout"></div></div>`;
+  const sale=c.sold?`<div class="card"><h3>Shitja</h3><div class="kv">
+      ${v.sale.contract_no?`<div><span>Kontrata</span><span>Nr. ${esc(v.sale.contract_no)}</span></div>`:''}
+      <div><span>Blerësi</span><span>${esc(v.sale.buyer||'pa emër')}${v.sale.buyer_id?' · '+(v.sale.buyer_is_nipt?'NIPT ':'')+esc(v.sale.buyer_id):''}</span></div>
+      ${v.sale.address||v.sale.city?`<div><span>Qyteti</span><span style="white-space:normal">${esc([v.sale.address,v.sale.city].filter(Boolean).join(', '))}</span></div>`:''}
+      <div><span>Data</span><span>${dmy(v.sale.date)}</span></div>
+      ${v.sale.cur==='EUR'&&num(v.sale.rate)>0?`<div><span>Në euro, me TVSH</span><span>€ ${money(Math.round(c.salePrice*(1+VAT_SALE)/num(v.sale.rate)*100)/100)} · kursi ${fmt(num(v.sale.rate),2)}</span></div>`:''}
+      <div><span>Çmimi pa TVSH</span><span>${lek(c.salePrice)}</span></div>
+      <div><span>Çmimi me TVSH 20%</span><span>${lek(c.salePrice*(1+VAT_SALE))}</span></div>
+      <div><span>Kosto e mjetit</span><span>${lek(c.cost)}</span></div>
+      <div class="total"><span>Fitimi</span><span style="color:var(${c.profit>=0?'--good':'--bad'})">${lek(c.profit)}${c.cost?` · ${fmt(c.profit/c.cost*100,1)}%`:''}</span></div></div>
+      ${S.confirmUnsell?`<div class="row end"><span class="small" style="flex:1 1 200px">Jeni i sigurt që doni ta anuloni këtë shitje? Mjeti kthehet në stok dhe të dhënat e blerësit fshihen.</span><button class="btn danger" data-act="unsell2">Po, anuloje shitjen</button><button class="btn" data-act="unsellno">Jo</button></div>`
+      :`<div class="row end"><button class="btn" data-act="unsell">Kthe në stok</button><button class="btn primary" data-act="contract">Kontrata</button></div>`}</div>`
+   :`<button class="btn primary" data-act="sellview" style="padding:14px;font-size:16px">Shitje</button>`;
+  return `<div class="top"><button class="btn ghost" data-act="back">‹ Lista</button><span class="pill ${c.sold?'sold':'stock'}">${c.sold?'Shitur':'Në stok'}</span></div>
+  <div><h2 style="font-size:24px">${esc(v.make_model||'Mjet pa emër')} ${esc(v.year||'')}</h2><div class="mono muted">${esc(v.vin||'pa VIN')}</div></div>
+  ${v.regime==='IM7'?`<div class="card" style="border-color:var(--bad);color:var(--bad)"><b>Deklarata është IM7, magazinë doganore.</b><span class="small">Mjeti nuk është zhdoganuar përfundimisht. Për ta shitur duhet deklarata IM4; kur ta kesh, ndrysho të dhënat e blerjes.</span></div>`:''}
+  <div class="card"><h3>Kosto e mjetit</h3><div class="kv">
+    <div><span>Blerja (${fmt(num(v.invoice_value),2)} ${esc(v.currency||'')} × ${v.currency==='ALL'?1:fmt(num(v.rate),3)})</span><span>${lek(c.purchase)}</span></div>
+    <div><span>Transporti</span><span>${lek(c.freight)}</span></div>
+    <div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>
+    <div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>
+    <div class="${c.vatInCost?'':'off'}"><span>TVSH e importit${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
+    <div><span>Shpenzime të tjera</span><span>${lek(c.exp)}</span></div>
+    <div class="total"><span>Kosto gjithsej</span><span>${lek(c.cost)}</span></div></div></div>
+  ${pricing}
+  <div class="card"><h3>Shpenzime të tjera</h3>
+    ${(v.expenses||[]).length?`<div>${v.expenses.map(e=>`<div class="exp"><span>${esc(e.desc||'Shpenzim')} <span class="muted small">${dmy(e.date)}</span></span><span class="row"><span class="num">${lek(num(e.amount))}</span>${c.sold?'':`<button data-act="delexp" data-id="${esc(e.id)}" aria-label="Hiq shpenzimin">Hiq</button>`}</span></div>`).join('')}</div>`:`<div class="small muted">Riparime, targa, larje, komisione. Çdo shpenzim i shtohet kostos.</div>`}
+    ${c.sold?'':`<div class="row"><div class="field grow"><label for="e-desc">Përshkrimi</label><input id="e-desc" type="text" autocomplete="off"></div>
+      <div class="field grow"><label for="e-amt">Shuma (lekë)</label><input id="e-amt" type="text" inputmode="decimal" autocomplete="off"></div>
+      <button class="btn" data-act="addexp" style="align-self:flex-end">Shto</button></div>`}</div>
+  ${sale}
+  ${info.length?`<div class="card"><h3>Dokumentet</h3><div class="kv">${info.map(([k,x])=>`<div><span class="muted">${k}</span><span style="white-space:normal">${esc(x)}</span></div>`).join('')}</div></div>`:''}
+  <div class="row end">${S.confirmDel?`<span class="small">Të fshihet ky mjet përgjithmonë?</span><button class="btn danger" data-act="del2">Po, fshije</button><button class="btn" data-act="delno">Jo</button>`
+    :`<button class="btn danger" data-act="del">Fshi mjetin</button><button class="btn" data-act="edit">Ndrysho të dhënat</button>`}</div>`;
+}
+const WD=['E diel','E hënë','E martë','E mërkurë','E enjte','E premte','E shtunë'];
+const iso=(y,m,d)=>y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+function longDate(s){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');if(!m)return 'Zgjidh datën';return m[3]+'.'+m[2]+'.'+m[1]}
+function parseDmy(s){
+  const m=/^\s*(\d{1,2})[.\/\- ]?(\d{1,2})[.\/\- ]?(\d{4}|\d{2})\s*$/.exec(s||'');if(!m)return '';
+  const d=+m[1],mo=+m[2],y=m[3].length===2?2000+ +m[3]:+m[3],t=new Date(y,mo-1,d);
+  return t.getFullYear()===y&&t.getMonth()===mo-1&&t.getDate()===d&&y>1999&&y<2100?iso(y,mo-1,d):'';
+}
+function refreshCal(){const w=$('.calwrap'),c=$('#cal');if(c)c.remove();if(w&&S.cal.open)w.insertAdjacentHTML('beforeend',calHtml(S.sale.date))}
+function openCal(){if(S.cal.open)return;const m=/^(\d{4})-(\d{2})/.exec(S.sale.date||today());S.cal.open=true;S.cal.y=+m[1];S.cal.m=+m[2]-1;refreshCal()}
+function calHtml(sel){
+  const y=S.cal.y,m=S.cal.m,first=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate(),t=today();
+  let cells='';for(let i=0;i<first;i++)cells+='<i></i>';
+  for(let d=1;d<=n;d++){const k=iso(y,m,d);cells+=`<button type="button" data-act="calpick" data-v="${k}" class="${k===sel?'sel':''}${k===t?' today':''}" aria-label="${d} ${MONTHS[m]} ${y}">${d}</button>`}
+  return `<div class="cal" id="cal" role="dialog" aria-label="Zgjidh datën e shitjes">
+    <div class="hd"><button type="button" data-act="calprev" aria-label="Muaji i mëparshëm">‹</button><span>${MONTHS[m]} ${y}</span><button type="button" data-act="calnext" aria-label="Muaji tjetër">›</button></div>
+    <div class="g">${['Hë','Ma','Më','En','Pr','Sh','Di'].map(x=>`<span>${x}</span>`).join('')}${cells}</div>
+    <div class="row" style="justify-content:space-between"><button type="button" class="btn" data-act="calpick" data-v="${t}" style="padding:7px 12px">Sot</button><button type="button" class="btn ghost" data-act="calclose" style="padding:7px 12px">Mbyll</button></div></div>`;
+}
+const CITIES=['Tiranë','Durrës','Vlorë','Shkodër','Elbasan','Fier','Korçë','Berat','Lushnjë','Kavajë','Pogradec','Gjirokastër','Sarandë','Lezhë','Kukës','Krujë','Fushë-Krujë','Vorë','Kamëz','Laç','Mamurras','Shijak','Kuçovë','Peshkopi','Burrel','Librazhd','Gramsh','Cërrik','Peqin','Rrogozhinë','Divjakë','Patos','Ballsh','Tepelenë','Përmet','Himarë','Delvinë','Rrëshen','Pukë','Bulqizë','Koplik','Bajram Curri','Ersekë','Maliq','Bilisht'];
+function viewSell(){
+  const v=S.vehicles.find(x=>x.id===S.id),s=S.sale;
+  if(!v||!s)return header()+`<div class="empty">Mjeti nuk u gjet.</div><button class="btn" data-act="back">Kthehu te lista</button>`;
+  const eur=s.cur==='EUR',unit=eur?'euro':'lekë',pv=num(s.price)?(eur?Math.round(num(s.price)*(1+VAT_SALE)*100)/100:Math.round(num(s.price)*(1+VAT_SALE))):'';
+  return `<div class="top"><h1>Shitje</h1><button class="btn ghost" data-act="sellcancel">Anulo</button></div>
+  <div><h2 style="font-size:22px">${esc(v.make_model||'Mjet pa emër')} ${esc(v.year||'')}</h2><div class="mono muted">${esc(v.vin||'pa VIN')}</div></div>
+  <div class="card"><h3>Blerësi</h3><div class="grid2">
+    <div class="field"><label for="s-buyer">Emri i blerësit</label><input id="s-buyer" data-s="buyer" type="text" value="${esc(s.buyer)}" autocomplete="off"></div>
+    <div class="field"><label for="s-bid" id="s-bid-l">${s.is_nipt?'NIPT':'Nr. personal'}</label>
+      <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="s-bid" data-s="buyer_id" type="text" value="${esc(s.buyer_id)}" placeholder="J12345678A" maxlength="12" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase">
+      <label class="small" style="display:flex;align-items:center;gap:5px;white-space:nowrap;color:var(--ink)"><input id="s-nipt" data-s="is_nipt" type="checkbox" ${s.is_nipt?'checked':''} style="width:16px;height:16px;padding:0">NIPT</label></div></div>
+    <div class="field" style="position:relative"><label for="s-city">Qyteti</label><input id="s-city" data-s="city" type="text" value="${esc(s.city)}" placeholder="p.sh. Tiranë" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="citylist">
+      <div id="citylist" class="sugg" role="listbox" hidden></div></div>
+    <div class="field calwrap" style="position:relative"><label for="s-date">Data e shitjes</label>
+      <div class="datebox"><button type="button" id="s-datebtn" data-act="calopen" tabindex="-1" aria-label="Hap kalendarin">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></button>
+        <input id="s-date" data-sd type="text" inputmode="${touch?'none':'numeric'}" value="${esc(longDate(s.date))}" placeholder="DD.MM.VVVV" maxlength="10" autocomplete="off" class="num"></div>
+      ${S.cal.open?calHtml(s.date):''}</div></div></div>
+  <div class="card"><h3>Çmimi</h3>
+    <div class="row"><div class="seg" role="group" aria-label="Monedha e shitjes">
+      <button data-act="scur" data-v="ALL" aria-pressed="${!eur}">Lekë</button>
+      <button data-act="scur" data-v="EUR" aria-pressed="${eur}">Euro</button></div>
+      ${eur?`<div class="field" style="flex:0 1 150px"><label for="s-rate">Kursi (1 euro në lekë)</label><input id="s-rate" data-s="rate" type="text" inputmode="decimal" class="num" value="${esc(s.rate??'')}" placeholder="p.sh. 97.5" autocomplete="off"></div>
+      <div class="small muted" id="s-ratenote" style="flex:1 1 160px;align-self:flex-end;padding-bottom:10px">${s.rateSrc==='boa'?'Kursi zyrtar i Bankës së Shqipërisë, datë '+dmy(S.boa.date)+'. Mund ta ndryshosh.':(S.boa&&boaAge()>5?'Kursi i Bankës së Shqipërisë është i datës '+dmy(S.boa.date)+', shumë i vjetër. Shkruaje vetë.':'')}</div>`:''}</div>
+    <div class="grid2">
+    <div class="field"><label for="s-price">Çmimi pa TVSH (${unit})</label><input id="s-price" data-s="price" type="text" inputmode="numeric" class="num" value="${s.price===''?'':money(num(s.price))}" autocomplete="off"></div>
+    <div class="field"><label for="s-pricevat">Çmimi me TVSH 20% (${unit})</label><input id="s-pricevat" data-s="priceVat" type="text" inputmode="numeric" class="num" value="${pv===''?'':money(pv)}" autocomplete="off"></div></div>
+    <div id="sout"></div></div>
+  <div class="row end"><button class="btn" data-act="sellcancel">Anulo</button><button class="btn primary" data-act="sellconfirm">Përfundo shitjen</button></div>`;
+}
+const money=n=>fmt(n,Math.abs(n-Math.round(n))<0.005?0:2);
+function updateSellOut(){
+  const el=$('#sout'),v=S.vehicles.find(x=>x.id===S.id);if(!el||!v||!S.sale)return;
+  const c=calc(v),s=S.sale,eur=s.cur==='EUR',rate=num(s.rate),p=num(s.price),pAll=eur?p*rate:p,profit=pAll-c.cost,ok=p>0&&(!eur||rate>0);
+  const show=x=>eur?`€ ${money(x)}${rate>0?` <span class="muted small">= ${lek(x*rate)}</span>`:''}`:lek(x);
+  const showL=x=>eur&&rate>0?`€ ${money(Math.round(x/rate*100)/100)} <span class="muted small">= ${lek(x)}</span>`:lek(x);
+  el.innerHTML=`<div class="kv">
+    <div><span>Kosto e mjetit</span><span>${showL(c.cost)}</span></div>
+    <div><span>Marzhi Fitimit${c.cost&&ok?` (${fmt(profit/c.cost*100,1)}%)`:''}</span><span>${showL(ok?profit:0)}</span></div>
+    <div><span>Çmimi pa TVSH</span><span>${show(p)}</span></div>
+    <div><span>TVSH 20%</span><span>${show(p*VAT_SALE)}</span></div>
+    <div class="total"><span>Për t'u paguar nga blerësi</span><span>${show(p*(1+VAT_SALE))}</span></div>
+    <div><span>Fitimi</span><span style="color:var(${profit>=0?'--good':'--bad'})">${showL(ok?profit:0)}</span></div></div>
+    ${eur&&!(rate>0)?'<div class="small" style="color:var(--warn)">Vendos kursin e euros që çmimi të dalë në euro.</div>':''}`;
+}
+
+/* ---------- company data ---------- */
+function companies(){
+  const m={},sel=S.settings.sellers||{};
+  for(const v of S.vehicles)if(v.importer_nipt||v.importer){const k=sellerKey(v);m[k]=m[k]||{key:k,name:v.importer||'',nipt:v.importer_nipt||''}}
+  for(const k in sel)m[k]=Object.assign(m[k]||{key:k,name:'',nipt:k},{});
+  return Object.values(m).map(c=>{const s=sel[c.key]||{};return {key:c.key,name:s.name||c.name,nipt:s.nipt||c.nipt,address:s.address||'',phone:s.phone||'',email:s.email||'',slogan:s.slogan===undefined?'Import dhe shitje automjetesh':s.slogan}});
+}
+function mainCompany(){const all=companies();return all.find(x=>x.key===S.settings.company)||all[0]}
+function viewCompany(){
+  const c=mainCompany();
+  const f=(k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${k}">${label}</label><input id="co-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
+  return `<div class="top"><h1>Settings</h1><span class="row">${SB?'<button class="btn ghost" data-act="logout">Dil</button>':''}<button class="btn ghost" data-act="back">‹ Mbyll</button></span></div>
+  ${c?`<div class="small muted">Këto të dhëna dalin në kokën e kontratës së shitjes. Ruhen vetë sapo del nga fusha.</div>
+  <div class="card"><div class="grid2">${f('name','Emri i kompanisë')}${f('nipt','NIPT')}${f('slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f('address','Adresa')}${f('phone','Telefoni','(+355) 6X XXX XXXX')}${f('email','Email')}</div></div>
+  <div class="card"><h3>Kursi i këmbimit</h3>${S.boa&&S.boa.rates?`<div class="kv">${['EUR','USD','GBP','CHF'].filter(k=>num(S.boa.rates[k])>0).map(k=>`<div><span>1 ${k}</span><span>${fmt(num(S.boa.rates[k]),2)} L</span></div>`).join('')}</div>
+    <div class="small ${boaAge()>5?'':'muted'}" ${boaAge()>5?'style="color:var(--bad)"':''}>Kursi zyrtar i Bankës së Shqipërisë, datë ${dmy(S.boa.date)}${S.boa.time?' ora '+esc(String(S.boa.time).slice(0,5)):''}.${boaAge()>5?' Është më i vjetër se 5 ditë, ndaj nuk përdoret te shitjet.':' Përdoret te shitjet në euro.'}</div>`
+    :'<div class="small muted">Kursi i Bankës së Shqipërisë nuk është ngarkuar ende. Te shitja në euro kursi shkruhet me dorë.</div>'}</div>`
+  :`<div class="card"><h3>Kompania</h3><div class="grid2">
+    <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="off"></div>
+    <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="12" autocomplete="off" style="text-transform:uppercase"></div></div>
+    <div class="row end"><button class="btn primary" data-act="coadd">Ruaj</button></div></div>`}`;
+}
+
+/* ---------- contract ---------- */
+const sellerKey=v=>String(v.importer_nipt||v.importer||'shitesi').replace(/[^A-Za-z0-9_-]/g,'_');
+function nextContractNo(year){
+  let m=0;for(const x of S.vehicles){const n=x.sale&&x.sale.contract_no;if(n&&String(n).endsWith('/'+year))m=Math.max(m,parseInt(n)||0)}
+  return (m+1)+'/'+year;
+}
+function splitMake(mm){
+  const s=String(mm||'').trim(),two=/^(MERCEDES[ -]BENZ|LAND ROVER|ALFA ROMEO|ASTON MARTIN|RANGE ROVER)\b/i.exec(s);
+  if(two)return [two[1],s.slice(two[1].length).trim()];
+  const i=s.indexOf(' ');return i<0?[s,'']:[s.slice(0,i),s.slice(i+1).trim()];
+}
+function contractData(v){
+  const c=calc(v),s=v.sale||{},sel=mainCompany()||{},B='________________';
+  const coName=sel.name||'',eur=s.cur==='EUR'&&num(s.rate)>0,k=eur?1/num(s.rate):1,unit=eur?'euro':'lekë';
+  const m=x=>eur?money(Math.round(x*k*100)/100):fmt(x);
+  return {brand:String(coName||'SHITËSI').replace(/\b(SH\.?P\.?K\.?|SH\.?A\.?)\b/gi,'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim(),
+    tagline:sel.slogan||'',contact:[sel.address,sel.phone,sel.email,sel.nipt?'NIPT '+sel.nipt:''].filter(Boolean),
+    no:s.contract_no||'',date:dmy(s.date),
+    seller:{name:coName||B,lines:[sel.nipt?'NIPT: '+sel.nipt:'',sel.address||'',sel.phone?'Tel: '+sel.phone:''].filter(Boolean)},
+    buyer:{name:s.buyer||B,lines:[(s.buyer_is_nipt?'NIPT: ':'Nr. personal: ')+(s.buyer_id||B),s.city?'Qyteti: '+s.city:''].filter(Boolean)},
+    car:[v.make_model,v.year].filter(Boolean).join(' ')||'Automjet',vin:v.vin||B,
+    specs:[['Viti i prodhimit',v.year],['Cilindrata',v.engine_cc?num(v.engine_cc)+' cc':''],['Karburanti',v.fuel],['Deklarata doganore',v.decl_no],['Data e zhdoganimit',dmy(v.decl_date)]].filter(r=>r[1]).map(r=>[r[0],String(r[1])]),
+    net:m(c.salePrice),vat:m(c.salePrice*VAT_SALE),total:m(c.salePrice*(1+VAT_SALE)),unit,
+    text:[`Shitësi, me vullnet të lirë dhe të plotë, i shet blerësit automjetin e mësipërm për shumën ${m(c.salePrice*(1+VAT_SALE))} ${unit}, me TVSH, e cila është likuiduar plotësisht. Me nënshkrimin e kësaj kontrate pronësia i kalon blerësit dhe shitësi nuk mban më përgjegjësi për mjetin. Fatura tatimore dorëzohet pas nënshkrimit.`]};
+}
+function contractHtml(v){
+  const k=contractData(v),P='#0b5c6b',lab='font:700 10.5px var(--body);letter-spacing:.8px;text-transform:uppercase;color:'+P;
+  const box=(t,o)=>`<div style="background:#f3f6f7;border-radius:8px;padding:10px 12px;min-width:0"><div style="${lab}">${t}</div><div style="font:700 15px var(--display);margin-top:2px;overflow-wrap:anywhere">${esc(o.name)}</div>${o.lines.map(l=>`<div style="font-size:12.5px">${esc(l)}</div>`).join('')}</div>`;
+  return `<div style="background:${P};color:#fff;margin:-22px -20px 0;padding:18px 20px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-end">
+    <div><div style="font:800 26px/1.1 var(--display);letter-spacing:.4px">${esc(k.brand)}</div>${k.tagline?`<div style="font-size:12.5px;opacity:.9">${esc(k.tagline)}</div>`:''}</div>
+    <div style="font-size:12px;text-align:right;line-height:1.45">${k.contact.map(esc).join('<br>')}</div></div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px;border-bottom:2px solid ${P};padding-bottom:6px">
+    <div style="font:800 19px var(--display);color:${P}">KONTRATË SHITJEJE</div><div style="font-size:12.5px">${k.no?'Nr. '+esc(k.no)+' · ':''}Datë ${esc(k.date)}</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${box('Shitësi',k.seller)}${box('Blerësi',k.buyer)}</div>
+  <div style="margin-top:4px"><div style="${lab}">Mjeti</div><div style="font:800 24px/1.15 var(--display)">${esc(k.car)}</div></div>
+  <div style="border:1.5px solid ${P};border-radius:8px;padding:8px 12px"><div style="font-size:11px;color:#5d6d76">Numri i shasisë (VIN)</div><div style="font:500 18px var(--mono);letter-spacing:1.5px;overflow-wrap:anywhere">${esc(k.vin)}</div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px 12px">${k.specs.map(([a,b])=>`<div><div style="font-size:11px;color:#5d6d76">${a}</div><div style="font-weight:600;font-size:14px">${esc(b)}</div></div>`).join('')}</div>
+  <div style="background:#dcebee;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;font-variant-numeric:tabular-nums">
+    <div style="font-size:13px;line-height:1.6">Çmimi pa TVSH: <b>${k.net} ${k.unit}</b><br>TVSH 20%: <b>${k.vat} ${k.unit}</b></div>
+    <div style="text-align:right"><div style="${lab}">Vlera gjithsej</div><div style="font:800 26px/1.1 var(--display);color:${P}">${k.total} ${k.unit}</div></div></div>
+  ${k.text.map(t=>`<p style="font-size:12px;line-height:1.5;color:#44525a;border-left:3px solid ${P};padding-left:10px;text-align:justify">${esc(t)}</p>`).join('')}
+  <div class="sig"><div><b>SHITËSI</b><br>${esc(k.seller.name)}<br><br>______________________</div><div><b>BLERËSI</b><br>${esc(k.buyer.name)}<br><br>______________________</div></div>`;
+}
+function viewContract(){
+  const v=S.vehicles.find(x=>x.id===S.id);
+  if(!v||v.status!=='sold')return header()+`<div class="empty">Kontrata del pasi mjeti të jetë shitur.</div><button class="btn" data-act="back">Kthehu te lista</button>`;
+  const btns=`${touch?'<button class="btn" data-act="cfile">Dërgo</button>':''}<button class="btn primary" data-act="cpdf">Printo kontratën</button>`;
+  return `<div class="top"><button class="btn ghost" data-act="cback">‹ Mjeti</button><span class="row">${btns}</span></div>
+  <div class="paper" id="cprev">${contractHtml(v)}</div>
+  <div class="row end">${btns}</div>
+  <div class="small muted">Kontrata hapet si PDF në A4, gati për printim. Emri, adresa dhe telefoni i shitësit ndryshohen te Settings, në faqen kryesore.</div>`;
+}
+async function contractPdf(v,print){
+  if(!(window.jspdf&&window.jspdf.jsPDF))await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),k=contractData(v),L=18,R=192,P=[11,92,107],INK=[20,35,43],MUT=[93,109,118];
+  const T=(t,x,y,o={})=>{doc.setFont(o.f||'helvetica',o.b?'bold':'normal');doc.setFontSize(o.s||10.5);doc.setTextColor(...(o.c||INK));doc.text(String(t),x,y,o.a?{align:o.a}:{})};
+  const fit=(t,w,s,b)=>{doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(s);return doc.splitTextToSize(String(t),w)};
+  // header band
+  doc.setFillColor(...P);doc.rect(0,0,210,40,'F');
+  let bs=26;doc.setFont('helvetica','bold');doc.setFontSize(bs);while(bs>14&&doc.getTextWidth(k.brand)>105){bs--;doc.setFontSize(bs)}
+  T(k.brand,L,k.tagline?21:24,{b:true,s:bs,c:[255,255,255]});if(k.tagline)T(fit(k.tagline,105,10.5)[0],L,29,{s:10.5,c:[220,235,238]});
+  k.contact.forEach((t,i)=>T(t,R,14+i*5.2,{s:9.5,c:[255,255,255],a:'right'}));
+  // title
+  T('KONTRATË SHITJEJE',L,54,{b:true,s:18,c:P});T((k.no?'Nr. '+k.no+'   ':'')+'Datë '+k.date,R,54,{s:11,a:'right'});
+  doc.setDrawColor(...P);doc.setLineWidth(0.6);doc.line(L,57.5,R,57.5);
+  // parties
+  const box=(x,t,o)=>{doc.setFillColor(243,246,247);doc.roundedRect(x,63,83,33,2,2,'F');T(t,x+5,70,{b:true,s:8,c:P});
+    let y=76.5;for(const l of fit(o.name,73,12.5,true).slice(0,2)){T(l,x+5,y,{b:true,s:12.5});y+=5.4}
+    for(const l of o.lines.slice(0,3)){T(fit(l,73,9.5)[0],x+5,y,{s:9.5,c:MUT});y+=4.6}};
+  box(L,'SHITËSI',k.seller);box(109,'BLERËSI',k.buyer);
+  // vehicle
+  T('MJETI',L,107,{b:true,s:8,c:P});T(fit(k.car,174,22,true)[0],L,116.5,{b:true,s:22});
+  doc.setDrawColor(...P);doc.setLineWidth(0.5);doc.roundedRect(L,122,174,18,2,2,'S');
+  T('Numri i shasisë (VIN)',L+5,128,{s:8.5,c:MUT});doc.setCharSpace(0.6);T(k.vin,L+5,136,{f:'courier',b:true,s:17});doc.setCharSpace(0);
+  k.specs.forEach(([a,b],i)=>{const x=L+(i%3)*58,y=149+Math.floor(i/3)*14;T(a,x,y,{s:8.5,c:MUT});T(fit(b,54,12,true)[0],x,y+5.6,{b:true,s:12})});
+  // value
+  const vy=149+Math.ceil(k.specs.length/3)*14+2;
+  doc.setFillColor(220,235,238);doc.roundedRect(L,vy,174,27,2.5,2.5,'F');
+  T('Çmimi pa TVSH',L+6,vy+10,{s:10,c:MUT});T(k.net+' '+k.unit,L+38,vy+10,{b:true,s:11});
+  T('TVSH 20%',L+6,vy+18,{s:10,c:MUT});T(k.vat+' '+k.unit,L+38,vy+18,{b:true,s:11});
+  T('VLERA GJITHSEJ',R-6,vy+8.5,{b:true,s:8,c:P,a:'right'});T(k.total+' '+k.unit,R-6,vy+20,{b:true,s:23,c:P,a:'right'});
+  // text
+  let y=vy+37;for(const p of k.text){const ls=fit(p,168,9.5);doc.setDrawColor(...P);doc.setLineWidth(0.8);doc.line(L+0.4,y-3.4,L+0.4,y+(ls.length-1)*4.6+1.2);for(const l of ls){T(l,L+5,y,{s:9.5,c:[68,82,90]});y+=4.6}y+=2}
+  // signatures
+  const sy=Math.min(Math.max(y+8,244),262);
+  T('SHITËSI',60,sy,{b:true,s:10.5,a:'center'});T('BLERËSI',150,sy,{b:true,s:10.5,a:'center'});
+  T(fit(k.seller.name,75,10.5)[0],60,sy+6,{s:10.5,a:'center'});T(fit(k.buyer.name,75,10.5)[0],150,sy+6,{s:10.5,a:'center'});
+  doc.setDrawColor(...INK);doc.setLineWidth(0.3);doc.line(30,sy+19,90,sy+19);doc.line(120,sy+19,180,sy+19);
+  T('nënshkrimi dhe vula',60,sy+23,{s:8,c:MUT,a:'center'});T('nënshkrimi',150,sy+23,{s:8,c:MUT,a:'center'});
+  doc.setFillColor(...P);doc.rect(0,291,210,6,'F');
+  if(print)doc.autoPrint();
+  return doc.output('blob');
+}
+let pdfBusy=false,sharePdf=null;
+function prebuildShare(){const v=S.vehicles.find(x=>x.id===S.id);sharePdf=null;if(!v||!touch)return;const id=v.id;contractPdf(v,false).then(b=>{if(S.id===id&&S.view==='contract')sharePdf={id,blob:b}}).catch(()=>{})}
+async function shareContract(){
+  const v=S.vehicles.find(x=>x.id===S.id);if(!v)return;
+  const name=('Kontrata '+(v.make_model||'mjet')+' '+String(v.vin||'').slice(-6)).replace(/[^A-Za-z0-9 _-]/g,'').trim().replace(/\s+/g,'-')+'.pdf';
+  if(sharePdf&&sharePdf.id===v.id&&navigator.share&&navigator.canShare){
+    try{const f=new File([sharePdf.blob],name,{type:'application/pdf'});
+      if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
+  downloadContract(false);
+}
+async function downloadContract(print){
+  const v=S.vehicles.find(x=>x.id===S.id);if(!v||pdfBusy)return;pdfBusy=true;
+  const name=('Kontrata '+(v.make_model||'mjet')+' '+String(v.vin||'').slice(-6)).replace(/[^A-Za-z0-9 _-]/g,'').trim().replace(/\s+/g,'-')+'.pdf';
+  try{
+    const blob=await contractPdf(v,print);
+    const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){await dl.save({filename:name,data:blob})}
+    else if(!print&&navigator.canShare&&navigator.canShare({files:[new File([blob],name,{type:'application/pdf'})]})){await navigator.share({files:[new File([blob],name,{type:'application/pdf'})],title:name}).catch(()=>{})}
+    else{const u=URL.createObjectURL(blob),w=window.open(u,'_blank');if(!w){const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove()}}
+  }catch(e){if(!(e&&e.code==='declined'))toast(e&&e.code==='rate_limited'?'Prit pak dhe provo përsëri.':'PDF-ja nuk u krijua. Provo përsëri.');console.error(e)}
+  pdfBusy=false;
+}
+function updatePricingOut(){
+  const el=$('#pout');if(!el)return;const v=S.vehicles.find(x=>x.id===S.id);if(!v)return;
+  const c=calc(v),own=num(v.pricing&&v.pricing.eur_rate),er=own||boaRate('EUR');
+  el.innerHTML=`<div class="kv">
+    <div><span>Kosto</span><span>${lek(c.cost)}</span></div>
+    <div><span>Marzhi Fitimit${c.cost&&c.markup?` (${fmt(c.markup/c.cost*100,1)}%${c.usesStd?', i përgjithshëm':''})`:''}</span><span>${lek(c.markup)}</span></div>
+    <div class="total"><span>Çmimi pa TVSH</span><span>${lek(c.price)}</span></div>
+    <div><span>Çmimi me TVSH 20%</span><span>${lek(c.priceVat)}</span></div>
+    ${er>0?`<div><span>Në euro, me TVSH${own?'':' (kursi BSH '+fmt(er,2)+')'}</span><span>€ ${fmt(c.priceVat/er)}</span></div>`:''}</div>`;
+}
+function readPricing(v){
+  v.pricing=v.pricing||{mode:'pct'};
+  const a=$('#p-val'),b=$('#p-eur');
+  if(a)v.pricing.value=a.value.trim()===''?'':num(a.value);
+  if(b)v.pricing.eur_rate=b.value.trim()===''?'':num(b.value);
+}
+
+/* ---------- scanning ---------- */
+let scanCtl=null;
+const PROMPT=`Je një lexues dokumentesh doganore shqiptare. Imazhet janë foto të një deklarate doganore importi (DPD - ASYCUDAWorld) për një automjet dhe, ndoshta, të faturës së shitësit të huaj. Një faqe e gjatë mund të jetë ndarë në gjysmën e sipërme dhe të poshtme me pak mbivendosje.
+
+Lexo me kujdes shifrat dhe përgjigju VETËM me një objekt JSON me këta çelësa (null kur nuk lexohet; numrat si numra pa presje mijëshesh; datat si YYYY-MM-DD):
+{
+ "supplier": kutia 2 Eksportuesi (emri), "supplier_country": shteti i eksportuesit,
+ "importer": kutia 8 Marrësi (emri), "importer_nipt": numri "Nr" i marrësit,
+ "customs_office": zyra doganore (p.sh. "AL144000 Durrës MBM"), "decl_no": referenca e deklaratës (p.sh. "R 15105"), "decl_date": data e deklaratës, "regime": kutia 1 Deklarata, lloji pa hapësirë (p.sh. "IM4" ose "IM7"),
+ "freight_all": kutia 12 Detajet e vlerës = transporti në lekë,
+ "currency": monedha e kutisë 22 (p.sh. "USD"), "invoice_value": shuma totale e faturës në kutinë 22, "rate": kutia 23 Kursi i këmbimit,
+ "make_model": marka dhe modeli nga kutia 31 (p.sh. "AUDI A3"), "engine_cc": cilindrata pas "CIL.", "fuel": karburanti (NAFTE, BENZINE...), "year": viti pas "VP." (viti i prodhimit),
+ "vin": numri i shasisë VIN me 17 karaktere,
+ "adjustment": kutia 45 Rregullimi, "customs_value": kutia 46 Vlera statistikore,
+ "taxes": [{"code": kodi në kutinë 47 (DOG, TVS, AKC...), "base": baza, "rate": përqindja, "amount": shuma}],
+ "taxes_total": totali i taksave në kutinë 47, "fees_total": "Totali i" tarifave në detajet e llogarisë (rreshti para totalit të fundit), "grand_total": totali i fundit i paguar në lekë,
+ "invoice_no": numri i faturës së shitësit, "invoice_date": data e faturës, "color": ngjyra e mjetit nga fatura, "invoice_price": çmimi i mjetit në faturë, "invoice_freight": transporti në faturë (në monedhë)
+}
+VIN-i lexohet shkronjë për shkronjë; krahasoje në të gjitha vendet ku shfaqet. Përshkrimi i mjetit mund të ketë renditje të ndryshme (p.sh. "MERCEDES BENZ CLS VP 2015.NAFTE.CIL 2143 CC"). Mos shpik vlera.`;
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function pdfFirstPage(file){
+  const base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  if(!window.pdfjsLib){await loadScript(base+'pdf.min.js');await loadScript(base+'pdf.worker.min.js')}
+  const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const pg=await pdf.getPage(1),vp=pg.getViewport({scale:2.2}),c=document.createElement('canvas');
+  c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:ctx,viewport:vp}).promise;
+  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('pdf')),'image/jpeg',.92));
+}
+async function prepImages(files,maxCount){
+  const out=[],split=files.length*2<=maxCount;
+  for(const f of files){
+    let bmp=null;try{bmp=await createImageBitmap(f,{imageOrientation:'from-image'})}catch(e){}
+    if(!bmp||!split||bmp.height<bmp.width*1.15){out.push(f);continue}
+    for(const [a,b] of [[0,.56],[.44,1]]){
+      const c=document.createElement('canvas'),h=Math.round(bmp.height*(b-a));c.width=bmp.width;c.height=h;
+      c.getContext('2d').drawImage(bmp,0,Math.round(bmp.height*a),bmp.width,h,0,0,bmp.width,h);
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));
+      if(blob)out.push(blob);
+    }
+  }
+  return out.length?out:files;
+}
+const SCAN_ERR={no_key:'Skanimi nuk është aktivizuar ende në server. Plotëso fushat me dorë.',not_granted:'Skanimi nuk u lejua. Plotëso fushat me dorë.',rate_limited:'Shumë kërkesa. Provo pas pak.',image_rejected:'Fotoja nuk u pranua. Provo një foto tjetër (JPEG ose PNG).',
+  images_unavailable:'Kjo pamje nuk dërgon dot foto. Plotëso fushat me dorë.',refused:'Dokumenti nuk u lexua. Provo një foto më të qartë.',invalid_json:'Leximi doli i paqartë. Provo përsëri me foto më të afërt.',
+  session_expired:'Hyr përsëri në Claude dhe provo.',sampling_disabled:'Skanimi nuk është i disponueshëm për këtë llogari.'};
+async function runScan(fileList){
+  let files=[...fileList].slice(0,(S.imgLimits&&S.imgLimits.maxCount)||2);
+  if(!files.length||!S.sample)return;
+  if(files.some(f=>/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name||''))){
+    S.scan={busy:true,msg:'Po hapet PDF-ja…',err:''};render();
+    try{files=await Promise.all(files.map(f=>(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name||''))?pdfFirstPage(f):f))}
+    catch(e){S.scan={busy:false,msg:'',err:'PDF-ja nuk u hap. Dërgoje si foto ose plotëso fushat me dorë.'};render();return}
+  }
+  S.scan={busy:true,msg:'Po përgatiten fotot…',err:''};render();
+  scanCtl=new AbortController();
+  try{
+    const imgs=await prepImages(files,(S.imgLimits&&S.imgLimits.maxCount)||1);
+    S.scan.msg='Po lexohet dokumenti. Zgjat deri në një minutë.';render();
+    const r=await S.sample.json(PROMPT,{images:imgs,signal:scanCtl.signal,cache:false});
+    applyScan(r&&typeof r==='object'?r:{});
+    S.scan={busy:false,msg:'',err:S.auto.size?(niptMismatch(S.draft)?niptMismatch(S.draft)+' Kontrollo nëse ke skanuar fletën e duhur.':''):'Nuk u lexua asnjë fushë. Provo me foto më të afërt dhe të drejtë.'};
+  }catch(e){
+    S.scan={busy:false,msg:'',err:e&&e.code==='cancelled'?'':(SCAN_ERR[e&&e.code]||'Leximi dështoi. Provo përsëri.')};
+  }
+  render();
+}
+function applyScan(r){
+  const d=S.draft,set=(k,v)=>{if(v===null||v===undefined||v==='')return;d[k]=v;S.auto.add(k)};
+  for(const k of ['supplier','supplier_country','importer','importer_nipt','customs_office','decl_no','make_model','fuel','invoice_no','color'])set(k,r[k]&&String(r[k]).trim());
+  for(const k of ['decl_date','invoice_date'])if(/^\d{4}-\d{2}-\d{2}$/.test(r[k]||''))set(k,r[k]);
+  for(const k of ['freight_all','invoice_value','rate','engine_cc','year','adjustment','customs_value'])if(r[k]!==null&&r[k]!==undefined&&num(r[k]))set(k,num(r[k]));
+  if(num(d.adjustment)>=10){const base=num(d.invoice_value)*num(d.rate)+num(d.freight_all),g=base>0&&num(d.customs_value)>0?num(d.customs_value)/base:0;d.adjustment=g>0.5&&g<10?Math.round(g*1000)/1000:num(d.adjustment)/1000}
+  if(r.currency)set('currency',String(r.currency).toUpperCase().slice(0,3));
+  if(r.regime){set('regime',String(r.regime).toUpperCase().replace(/[^A-Z0-9]/g,''));if(d.regime==='IM7')toast('Kjo deklaratë është IM7, magazinë doganore. Për shitje duhet IM4.')}
+  if(r.vin)set('vin',String(r.vin).toUpperCase().replace(/[^A-Z0-9]/g,''));
+  if(!num(d.invoice_value)&&num(r.invoice_price))set('invoice_value',num(r.invoice_price));
+  const tx=Array.isArray(r.taxes)?r.taxes:[];
+  if(tx.length||r.grand_total){
+    const amt=re=>tx.filter(t=>re.test(String(t.code||''))).reduce((a,t)=>a+num(t.amount),0);
+    const duty=amt(/^DOG/i),vat=amt(/^TV/i),rest=tx.filter(t=>!/^(DOG|TV)/i.test(String(t.code||''))).reduce((a,t)=>a+num(t.amount),0);
+    const grand=num(r.grand_total),tvs=tx.find(t=>/^TV/i.test(String(t.code||'')));if(tvs&&num(tvs.base))set('tax_base',num(tvs.base));
+    const unpaid=grand>0&&vat>0&&grand<vat;
+    d.duty=duty;d.vat=unpaid?0:vat;d.other_fees=grand>0&&grand>=duty+vat?grand-duty-vat:rest+num(r.fees_total);
+    if(unpaid)toast('Sipas fletës, TVSH-ja nuk është paguar në doganë. U la zero.');
+    ['duty','vat','other_fees'].forEach(k=>S.auto.add(k));
+  }
+}
+
+/* ---------- city suggestions ---------- */
+const plain=s=>String(s||'').toLowerCase().replace(/ë/g,'e').replace(/ç/g,'c');
+let cityOpts=[],cityIdx=-1;
+function cityShow(){
+  const inp=$('#s-city'),box=$('#citylist');if(!inp||!box)return;
+  const q=plain(inp.value.trim()),all=[...new Set(S.vehicles.map(x=>x.sale&&x.sale.city).filter(Boolean).concat(CITIES))];
+  cityOpts=(q?all.filter(c=>plain(c).startsWith(q)).concat(all.filter(c=>!plain(c).startsWith(q)&&plain(c).includes(q))):all).slice(0,8);
+  if(cityOpts.length===1&&plain(cityOpts[0])===q&&cityOpts[0]===inp.value.trim())cityOpts=[];
+  if(cityIdx>=cityOpts.length)cityIdx=cityOpts.length-1;
+  box.hidden=!cityOpts.length;inp.setAttribute('aria-expanded',String(!!cityOpts.length));
+  box.innerHTML=cityOpts.map((c,i)=>`<div role="option" data-city="${esc(c)}" class="${i===cityIdx?'on':''}" aria-selected="${i===cityIdx}">${esc(c)}</div>`).join('');
+  const on=box.querySelector('.on');if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest'});
+}
+function cityHide(){const box=$('#citylist'),inp=$('#s-city');if(box)box.hidden=true;if(inp)inp.setAttribute('aria-expanded','false');cityIdx=-1}
+function cityPick(c){const inp=$('#s-city');if(!inp)return;inp.value=c;if(S.sale)S.sale.city=c;cityHide()}
+document.addEventListener('keydown',e=>{
+  if(e.target.id!=='s-city')return;
+  const open=!$('#citylist').hidden;
+  if(e.key==='ArrowDown'){e.preventDefault();if(!open){cityIdx=0;cityShow()}else{cityIdx=(cityIdx+1)%cityOpts.length;cityShow()}}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(open){cityIdx=(cityIdx-1+cityOpts.length)%cityOpts.length;cityShow()}}
+  else if(e.key==='Enter'&&open){e.preventDefault();cityPick(cityOpts[cityIdx<0?0:cityIdx])}
+  else if(e.key==='Tab'&&open&&cityIdx>=0){cityPick(cityOpts[cityIdx])}
+  else if(e.key==='Escape'&&open){e.preventDefault();cityHide()}
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.id!=='s-date')return;
+  if(e.key==='ArrowDown'){e.preventDefault();openCal()}
+  else if(e.key==='Tab'||e.key==='Enter'){if(e.key==='Enter'){e.preventDefault();const d=parseDmy(e.target.value);if(d)S.sale.date=d;e.target.value=longDate(S.sale.date)}S.cal.open=false;refreshCal()}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.cal.open&&S.view==='sell'){S.cal.open=false;refreshCal()}});
+document.addEventListener('mousedown',e=>{const o=e.target.closest&&e.target.closest('[data-city]');if(o){e.preventDefault();cityPick(o.dataset.city)}});
+document.addEventListener('focusin',e=>{if(e.target.id==='s-city'){cityIdx=-1;cityShow()}});
+document.addEventListener('focusout',e=>{if(e.target.id==='s-city')cityHide()});
+
+/* ---------- events ---------- */
+function newDraft(){return {id:'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),status:'stock',currency:'USD',regime:'IM4',vat_deductible:true,expenses:[],pricing:{mode:'pct',value:''},created:new Date().toISOString()}}
+document.addEventListener('click',e=>{
+  if(S.cal.open&&!e.target.closest('.calwrap')){S.cal.open=false;const c=$('#cal');if(c)c.remove()}
+  if(e.target.id==='s-date'){openCal();return}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act,v=S.vehicles.find(x=>x.id===S.id);
+  if(act==='login'){doLogin();return}
+  if(act==='logout'){doLogout();return}
+  if(act==='company'){S.view='company';scrollTo(0,0)}
+  else if(act==='coadd'){
+    const name=$('#co-new-name').value.trim(),nipt=$('#co-new-nipt').value.trim().toUpperCase();
+    if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
+    const k=sellerKey({importer_nipt:nipt});S.settings.sellers=S.settings.sellers||{};
+    if(companies().length){toast('Kompania është vendosur tashmë.');return}
+    S.settings.sellers[k]={name,nipt};S.settings.company=k;saveSettings();
+  }
+  if(act==='qclear'){S.q='';const q=$('#q');q.value='';b.hidden=true;updateList();q.focus();return}
+  if(act==='tab'){S.tab=b.dataset.v}
+  else if(act==='repmode'){S.rep.mode=b.dataset.v}
+  else if(act==='xlsx'){exportReport();return}
+  else if(act==='new'){S.niptAck=null;S.draft=newDraft();S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
+  else if(act==='open'){S.id=b.dataset.id;S.view='detail';S.confirmDel=false;S.confirmUnsell=false;scrollTo(0,0)}
+  else if(act==='back'){S.view='list'}
+  else if(act==='cancel'){if(scanCtl)scanCtl.abort();S.view=S.vehicles.some(x=>x.id===S.draft.id)?'detail':'list'}
+  else if(act==='scanstop'){if(scanCtl)scanCtl.abort();return}
+  else if(act==='savedraft'){
+    const d=S.draft;
+    if(!String(d.make_model||'').trim()&&!String(d.vin||'').trim()){toast('Shkruaj të paktën markën ose numrin e shasisë.');return}
+    const nm=niptMismatch(d);if(nm&&S.niptAck!==d.id){S.niptAck=d.id;toast(nm+' Shtyp përsëri "Ruaj blerjen" nëse do ta ruash gjithsesi.');return}
+    const dup=d.vin&&S.vehicles.find(x=>x.id!==d.id&&x.vin&&x.vin===d.vin);
+    if(dup){toast('Ky numër shasie është regjistruar tashmë: '+(dup.make_model||''));return}
+    save(JSON.parse(JSON.stringify(d)));S.id=d.id;S.view='detail';S.confirmDel=false;scrollTo(0,0);
+  }
+  else if(act==='edit'&&v){S.draft=JSON.parse(JSON.stringify(v));S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
+  else if(act==='del'){S.confirmDel=true}
+  else if(act==='delno'){S.confirmDel=false}
+  else if(act==='del2'&&v){remove(v.id);S.view='list';S.confirmDel=false}
+  else if(act==='pmode'&&v){readPricing(v);v.pricing.mode=b.dataset.v;v.pricing.value='';save(v)}
+  else if(act==='addexp'&&v){
+    const amt=num($('#e-amt').value);if(!amt){toast('Shkruaj shumën e shpenzimit.');return}
+    readPricing(v);v.expenses=(v.expenses||[]).concat({id:'e'+Date.now().toString(36),desc:$('#e-desc').value.trim(),amount:amt,date:today()});save(v);
+  }
+  else if(act==='delexp'&&v){readPricing(v);v.expenses=(v.expenses||[]).filter(x=>x.id!==b.dataset.id);save(v)}
+  else if(act==='sellview'){
+    S.saleFrom=S.view==='detail'?'detail':'list';
+    if(S.view==='detail'&&v)readPricing(v);
+    if(b.dataset.id)S.id=b.dataset.id;
+    const t=S.vehicles.find(x=>x.id===S.id);if(!t)return;
+    if(t.regime==='IM7')toast('Kujdes: ky mjet është me IM7, magazinë doganore. Për shitje duhet IM4.');
+    if(S.view==='detail')save(t);
+    const c=calc(t);S.cal.open=false;S.sale={buyer:'',buyer_id:'',is_nipt:false,address:'',city:'',date:today(),cur:'ALL',rate:boaRate('EUR')||num(t.pricing&&t.pricing.eur_rate)||'',rateSrc:boaRate('EUR')?'boa':'',price:c.markup?Math.round(c.price):'',sugg:c.markup?Math.round(c.price):0,touched:false};S.view='sell';scrollTo(0,0);
+  }
+  else if(act==='contract'&&v&&v.sale){if(!v.sale.contract_no){v.sale.contract_no=nextContractNo(String(v.sale.date||today()).slice(0,4));save(v)}S.view='contract';scrollTo(0,0)}
+  else if(act==='cback'){S.view='detail';S.confirmUnsell=false}
+  else if(act==='cpdf'){downloadContract(true);return}
+  else if(act==='cfile'){shareContract();return}
+  else if(act==='scur'&&S.sale){
+    const s=S.sale,to=b.dataset.v,rate=num(s.rate);
+    if(to!==s.cur){
+      const r2=x=>Math.round(x*100)/100;
+      if(to==='EUR'){s.keepAll=s.touched?s.price:s.sugg||'';s.price=rate>0&&num(s.keepAll)?r2(num(s.keepAll)/rate):''}
+      else s.price=!s.touched?(s.sugg||''):(rate>0&&num(s.price)?Math.round(num(s.price)*rate):(s.keepAll??''));
+      s.cur=to;
+    }
+  }
+  else if(act==='calopen'){S.cal.open=!S.cal.open;const m=/^(\d{4})-(\d{2})/.exec(S.sale.date||today());S.cal.y=+m[1];S.cal.m=+m[2]-1}
+  else if(act==='calprev'){if(--S.cal.m<0){S.cal.m=11;S.cal.y--}}
+  else if(act==='calnext'){if(++S.cal.m>11){S.cal.m=0;S.cal.y++}}
+  else if(act==='calpick'){S.sale.date=b.dataset.v;S.cal.open=false}
+  else if(act==='calclose'){S.cal.open=false}
+  else if(act==='sellcancel'){S.view=S.saleFrom==='list'?'list':'detail';S.confirmDel=false;S.cal.open=false}
+  else if(act==='sellconfirm'&&v){
+    if(!String(S.sale.buyer||'').trim()){toast('Shkruaj emrin e blerësit. Shitja nuk ruhet pa të.');const f=$('#s-buyer');if(f)f.focus();return}
+    const pc=num(S.sale.price),eur=S.sale.cur==='EUR',rate=num(S.sale.rate);if(!pc){toast('Shkruaj çmimin e shitjes.');return}
+    if(eur&&!(rate>0)){toast('Shkruaj kursin e euros.');return}
+    const price=eur?Math.round(pc*rate*100)/100:pc;
+    v.status='sold';v.sale={buyer:String(S.sale.buyer||'').trim(),buyer_id:String(S.sale.buyer_id||'').trim().toUpperCase(),buyer_is_nipt:!!S.sale.is_nipt,address:String(S.sale.address||'').trim(),city:String(S.sale.city||'').trim(),date:S.sale.date||today(),price};
+    if(eur){v.sale.cur='EUR';v.sale.rate=rate;if(num(S.settings.eur_rate)!==rate){S.settings.eur_rate=rate;saveSettings()}}
+    v.sale.contract_no=nextContractNo(v.sale.date.slice(0,4));save(v);
+    S.view='contract';S.confirmDel=false;scrollTo(0,0);
+  }
+  else if(act==='unsell'){S.confirmUnsell=true}
+  else if(act==='unsellno'){S.confirmUnsell=false}
+  else if(act==='unsell2'&&v){v.status='stock';delete v.sale;S.confirmUnsell=false;save(v)}
+  render();if(S.view==='detail')updatePricingOut();
+  if(act.startsWith('cal')){const f=S.cal.open?$('#cal .sel')||$('#cal .today')||$('#cal button'):$('#s-date');if(f)f.focus()}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.f&&S.view==='form'){
+    const k=t.dataset.f;
+    S.draft[k]=t.type==='checkbox'?t.checked:(k==='vin'?t.value.toUpperCase().trim():t.value);
+    S.auto.delete(k);t.classList.remove('auto');updateFormSummary();
+  }else if(t.dataset.q!==undefined&&S.view==='list'){S.q=t.value;$('#qx').hidden=!t.value;updateList();
+  }else if(t.dataset.std!==undefined&&S.view==='list'){S.settings.default_pct=t.value.trim()===''?'':num(t.value);updateList();
+  }else if(t.dataset.co&&S.view==='company'){
+    S.settings.sellers=S.settings.sellers||{};const k=t.dataset.co,cur=companies().find(c=>c.key===k)||{};
+    S.settings.sellers[k]=Object.assign({name:cur.name||'',nipt:cur.nipt||''},S.settings.sellers[k],{[t.dataset.k]:t.value.trim()});
+  }else if(t.dataset.sel&&S.view==='contract'){
+    const v=S.vehicles.find(x=>x.id===S.id);if(!v)return;
+    S.settings.sellers=S.settings.sellers||{};const k=sellerKey(v);S.settings.sellers[k]=Object.assign({},S.settings.sellers[k],{[t.dataset.sel]:t.value});
+    $('#cprev').innerHTML=contractHtml(v);
+  }else if(t.dataset.cs&&S.view==='contract'){
+    const v=S.vehicles.find(x=>x.id===S.id);if(!v||!v.sale)return;v.sale[t.dataset.cs]=t.value.trim();$('#cprev').innerHTML=contractHtml(v);
+  }else if(t.dataset.sd!==undefined&&S.view==='sell'){const d=parseDmy(t.value);if(d){S.sale.date=d;S.cal.y=+d.slice(0,4);S.cal.m=+d.slice(5,7)-1;refreshCal()}
+  }else if(t.dataset.s&&S.view==='sell'){
+    const k=t.dataset.s;
+    if(k==='price'||k==='priceVat'){
+      const before=t.value.slice(0,t.selectionStart).replace(/\D/g,'').length,digits=t.value.replace(/\D/g,''),n=digits===''?'':+digits;
+      t.value=n===''?'':fmt(n);
+      let i=0,c=0;while(i<t.value.length&&c<before){if(/\d/.test(t.value[i]))c++;i++}
+      try{t.setSelectionRange(i,i)}catch(e){}
+      const eur=S.sale.cur==='EUR',r=x=>eur?Math.round(x*100)/100:Math.round(x);S.sale.touched=true;
+      if(k==='priceVat'){S.sale.price=n===''?'':r(n/(1+VAT_SALE));$('#s-price').value=S.sale.price===''?'':money(S.sale.price)}
+      else{S.sale.price=n;$('#s-pricevat').value=n===''?'':money(r(n*(1+VAT_SALE)))}
+    }
+    else if(t.type==='checkbox'){S.sale[k]=t.checked;$('#s-bid-l').textContent=t.checked?'NIPT':'Nr. personal'}
+    else{S.sale[k]=t.value;if(k==='city'){cityIdx=-1;cityShow()}
+      if(k==='rate'){S.sale.rateSrc='';const n=$('#s-ratenote');if(n)n.textContent=''}
+      const base=num(S.sale.touched?S.sale.keepAll:S.sale.sugg);
+      if(k==='rate'&&S.sale.cur==='EUR'&&(!S.sale.touched||S.sale.price==='')&&base>0&&num(t.value)>0){
+        S.sale.price=Math.round(base/num(t.value)*100)/100;$('#s-price').value=money(S.sale.price);$('#s-pricevat').value=money(Math.round(S.sale.price*(1+VAT_SALE)*100)/100)}}
+    updateSellOut();
+  }else if(t.dataset.p&&S.view==='detail'){
+    const v=S.vehicles.find(x=>x.id===S.id);if(v){readPricing(v);updatePricingOut()}
+  }
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.std!==undefined){saveSettings();t.value=S.settings.default_pct===''?'':S.settings.default_pct+'%';return}
+  if(t.dataset.sd!==undefined){const d=parseDmy(t.value);if(d)S.sale.date=d;else toast('Data nuk u kuptua. Shkruaje si DD.MM.VVVV, p.sh. 10.11.2026.');t.value=longDate(S.sale.date);return}
+  if(t.dataset.sel||t.dataset.co){saveSettings();return}
+  if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
+  if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
+  if(t.id==='scanfile'){const f=t.files;if(f&&f.length)runScan(f);return}
+  if(t.dataset.p&&S.view==='detail'){
+    const v=S.vehicles.find(x=>x.id===S.id);
+    if(v){readPricing(v);save(v);const sp=$('#s-price');if(sp){const c=calc(v);sp.value=c.markup?Math.round(c.price):''}}
+  }
+});
+
+/* ---------- keyboard: OK button, tap outside, Enter ---------- */
+const isField=el=>!!el&&(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&!/^(checkbox|radio|file|button|submit)$/.test(el.type)));
+const touch=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+const hintAll=()=>document.querySelectorAll('input,textarea').forEach(el=>{if(isField(el)&&!el.enterKeyHint)el.enterKeyHint='done'});
+new MutationObserver(hintAll).observe($('#app'),{childList:true,subtree:true});hintAll();
+document.addEventListener('pointerdown',e=>{
+  const a=document.activeElement;if(!isField(a))return;
+  if(e.target.closest('input,select,textarea,label,#qx,.sugg,.cal,.datebox'))return;
+  a.blur();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||!isField(e.target)||e.target.id==='s-date')return;
+  if(e.target.id==='s-city'&&!$('#citylist').hidden)return;
+  e.target.blur();
+});
+
+/* ---------- Supabase (kur programi rri në hostin e vet) ---------- */
+let SB=null;
+function viewLogin(){
+  return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
+    <div class="brand"><h1>AutoSales ERP</h1><span>Hyr me llogarinë e kompanisë</span></div>
+    <div class="card">
+      <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
+      <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+      ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
+      <button class="btn primary" data-act="login" ${S.loginBusy?'disabled':''}>${S.loginBusy?'Po hyn…':'Hyr'}</button></div></div>`;
+}
+async function doLogin(){
+  if(!SB||S.loginBusy)return;
+  const email=$('#l-mail').value.trim(),password=$('#l-pass').value;
+  if(!email||!password){S.loginErr='Shkruaj emailin dhe fjalëkalimin.';S.loginMail=email;render();return}
+  S.loginBusy=true;S.loginErr='';S.loginMail=email;render();
+  const {error}=await SB.auth.signInWithPassword({email,password});
+  S.loginBusy=false;
+  if(error){S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.':'Hyrja dështoi. Provo përsëri.';render();return}
+  startSupabase();
+}
+async function doLogout(){try{await SB.auth.signOut()}catch(e){}location.reload()}
+function supaDb(sb,cid){
+  const subs=[];let pending=0;
+  const snap=(id,row)=>({id,exists:!!row,data:()=>row?row.data:undefined});
+  async function load(s){
+    try{
+      if(s.t==='col'){const {data,error}=await sb.from('vehicles').select('id,data').eq('company_id',cid);if(error)throw error;
+        if(!pending)s.cb({docs:data.map(r=>snap(r.id,r))})}
+      else if(s.col==='settings'){const {data,error}=await sb.from('settings').select('data').eq('company_id',cid).maybeSingle();if(error)throw error;if(!pending)s.cb(snap(s.id,data))}
+      else if(s.col==='rates'){const {data,error}=await sb.from('rates').select('data').eq('source',s.id).maybeSingle();if(error)throw error;s.cb(snap(s.id,data))}
+    }catch(e){console.error(e)}
+  }
+  const sub=s=>{subs.push(s);load(s);return()=>{const i=subs.indexOf(s);if(i>=0)subs.splice(i,1)}};
+  const refresh=()=>{if(!pending&&document.visibilityState==='visible')subs.forEach(load)};
+  setInterval(refresh,60000);document.addEventListener('visibilitychange',refresh);
+  const fail=error=>({code:error&&(error.code==='42501'||error.code==='PGRST301')?'invalid_argument':'unavailable',message:error&&error.message});
+  return {
+    collection(name){return {onSnapshot:(cb,err)=>sub({t:'col',name,cb,err})}},
+    doc(path){const [col,id]=path.split('/');return {
+      onSnapshot:(cb,err)=>sub({t:'doc',col,id,cb,err}),
+      async set(data){pending++;try{
+        const q=col==='vehicles'?sb.from('vehicles').upsert({company_id:cid,id,data}):col==='settings'?sb.from('settings').upsert({company_id:cid,data}):null;
+        if(!q)throw {code:'invalid_argument'};const {error}=await q;if(error)throw fail(error)}finally{pending--}},
+      async delete(){pending++;try{const {error}=await sb.from('vehicles').delete().eq('company_id',cid).eq('id',id);if(error)throw fail(error)}finally{pending--}}}}
+  };
+}
+function supaScan(sb){
+  async function b64(blob){
+    let bmp=null;try{bmp=await createImageBitmap(blob,{imageOrientation:'from-image'})}catch(e){}
+    if(bmp){const k=Math.min(1,2000/Math.max(bmp.width,bmp.height)),c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+      c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return {media_type:'image/jpeg',data:c.toDataURL('image/jpeg',.9).split(',')[1]}}
+    const buf=new Uint8Array(await blob.arrayBuffer());let s='';for(let i=0;i<buf.length;i+=32768)s+=String.fromCharCode.apply(null,buf.subarray(i,i+32768));
+    return {media_type:blob.type||'image/jpeg',data:btoa(s)};
+  }
+  return {
+    async json(prompt,o={}){
+      const images=[];for(const f of [].concat(o.images||[]))images.push(await b64(f));
+      const {data,error}=await sb.functions.invoke('scan',{body:{prompt,images}});
+      if(o.signal&&o.signal.aborted)throw {code:'cancelled'};
+      if(error){let code='upstream_error';try{const j=await error.context.json();if(j&&j.code)code=j.code}catch(e){}throw {code}}
+      if(!data||data.result===undefined||data.result===null)throw {code:'invalid_json'};
+      return data.result;
+    },
+    async limits(){return {images:{maxCount:4,mediaTypes:['image/jpeg','image/png','image/webp']}}}
+  };
+}
+async function bootSupabase(cfg){
+  try{
+    if(!window.supabase)await loadScript(cfg.sdk||'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+    SB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+    const {data}=await SB.auth.getSession();
+    if(!data.session){S.view='login';render();return}
+  }catch(e){S.view='login';S.loginErr='Nuk u lidh dot me serverin. Kontrollo internetin dhe rifresko faqen.';render();return}
+  startSupabase();
+}
+async function startSupabase(){
+  S.view='list';S.loaded=false;S.slow=false;render();
+  const timer=setTimeout(()=>{if(!S.loaded){S.slow=true;if(S.view==='list')render()}},10000);
+  const {data:cid,error}=await SB.rpc('ensure_company');
+  if(error||!cid){clearTimeout(timer);S.view='login';S.loginErr='Hyrja u krye, por kompania nuk u ngarkua. Provo përsëri.';render();return}
+  S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
+  attachDb(supaDb(SB,cid),timer);
+}
+function attachDb(db,timer){
+    S.db=db;
+    db.collection('vehicles').onSnapshot(snap=>{
+      clearTimeout(timer);S.loaded=true;S.slow=false;
+      S.vehicles=snap.docs.map(d=>Object.assign(JSON.parse(JSON.stringify(d.data()||{})),{id:d.id}));
+      if(S.view!=='form'&&S.view!=='sell'&&S.view!=='contract'&&S.view!=='company'&&!typing()){render();if(S.view==='detail')updatePricingOut()}
+      else if(S.view==='list')updateList();
+    },()=>{clearTimeout(timer);S.loaded=true;if(S.view==='list')render()});
+    db.doc('rates/boa').onSnapshot(d=>{S.boa=d.exists?JSON.parse(JSON.stringify(d.data()||{})):null;
+      if(!typing()&&(S.view==='company'||S.view==='detail')){render();if(S.view==='detail')updatePricingOut()}},()=>{});
+    db.doc('settings/main').onSnapshot(d=>{
+      if(typing()&&(document.activeElement.id==='std'||S.view==='contract'||S.view==='company'))return;
+      S.settings=Object.assign({default_pct:'',sellers:{}},d.exists?JSON.parse(JSON.stringify(d.data()||{})):{});
+      if(S.view==='list'){if(typing())updateList();else render()}
+      else if(S.view==='detail'&&!typing()){render();updatePricingOut()}
+    },()=>{});
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  const cfg=window.AUTOSALES_CONFIG;
+  render();
+  if(!(window.claude&&window.claude.use)&&cfg&&cfg.supabaseUrl){S.sample=undefined;return bootSupabase(cfg)}
+  const timer=setTimeout(()=>{if(!S.loaded){S.slow=true;if(S.view==='list')render()}},10000);
+  let db=null;
+  if(window.claude&&window.claude.use){
+    window.claude.use('sample').then(async s=>{
+      if(!s){S.sample=undefined;return}
+      S.sample=s;try{const l=await s.limits();S.imgLimits=l.images||null}catch(e){S.imgLimits=null}
+      if(S.view==='form'&&!typing())render();
+    }).catch(()=>{S.sample=undefined});
+    try{db=await window.claude.use('db')}catch(e){db=null}
+  }else S.sample=undefined;
+  if(db){attachDb(db,timer);
+  }else{clearTimeout(timer);S.loaded=true;loadLocal();if(S.view==='list')render()}
+}
+boot();
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='l-pass')doLogin()});
+if('serviceWorker' in navigator&&!(window.claude&&window.claude.use)&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
