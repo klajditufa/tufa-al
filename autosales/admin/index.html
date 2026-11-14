@@ -89,6 +89,10 @@ dialog::backdrop{background:rgba(8,18,22,.55)}
 .msg{font-size:13px}
 .msg.bad{color:var(--bad)} .msg.good{color:var(--good)}
 .center{max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%}
+.logo-wrap{display:flex;justify-content:center;padding:4px 0}
+.logo-wrap img{display:block;width:min(230px,60vw);height:auto}
+/* Logoja është blu e errët: në pamjen e errët i vihet një sfond i çelët që të lexohet. */
+@media (prefers-color-scheme: dark){.logo-wrap{background:#eef1f3;border-radius:14px;padding:10px}}
 </style>
 </head>
 <body>
@@ -135,7 +139,7 @@ function render(){
   const app=$('#app');
   if(S.view==='boot'){app.innerHTML='<div class="center muted">Po ngarkohet…</div>';return}
   if(S.view==='login'){app.innerHTML=`<div class="center">
-    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="../logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="logo-wrap"><img src="../logo.png" width="560" height="579" alt="TUFA AutoSales ERP"></div>
     <div class="brand" style="text-align:center"><span>Admin · hyr me llogarinë e administratorit</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.mail)}"></div>

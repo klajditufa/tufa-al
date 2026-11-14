@@ -135,6 +135,10 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .cal .g button.sel{background:var(--accent);color:var(--accent-ink);font-weight:700}
 .exp{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
 .exp button{appearance:none;border:0;background:none;color:var(--bad);font:600 13px var(--body);cursor:pointer;padding:4px 6px}
+.logo-wrap{display:flex;justify-content:center;padding:4px 0}
+.logo-wrap img{display:block;width:min(230px,60vw);height:auto}
+/* Logoja është blu e errët: në pamjen e errët i vihet një sfond i çelët që të lexohet. */
+@media (prefers-color-scheme: dark){.logo-wrap{background:#eef1f3;border-radius:14px;padding:10px}}
 </style>
 </head>
 <body>
@@ -1085,7 +1089,7 @@ function installHtml(full){
 let SB=null;
 function viewLogin(){
   if(S.loginMode==='newpass')return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="logo-wrap"><img src="logo.png" width="560" height="579" alt="TUFA AutoSales ERP"></div>
     <div class="brand"><span>Vendos fjalëkalimin e ri</span></div>
     <div class="card">
       <div class="field"><label for="l-pass">Fjalëkalimi i ri</label><input id="l-pass" type="password" autocomplete="new-password"></div>
@@ -1095,7 +1099,7 @@ function viewLogin(){
   if(S.loginMode==='forgot'){
     const lk='background:none;border:0;padding:6px;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
     return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="logo-wrap"><img src="logo.png" width="560" height="579" alt="TUFA AutoSales ERP"></div>
     <div class="brand"><span>Rivendos fjalëkalimin</span></div>
     <div class="card">
       ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`
@@ -1107,7 +1111,7 @@ function viewLogin(){
   const up=S.loginMode==='signup';
   const link='background:none;border:0;padding:6px;color:var(--accent,#0b5c6b);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
   return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="logo-wrap"><img src="logo.png" width="560" height="579" alt="TUFA AutoSales ERP"></div>
     <div class="brand" style="text-align:center"><span>${up?'Krijo llogarinë e kompanisë':'Hyr me llogarinë e kompanisë'}</span></div>
     ${S.loginSent?`<div class="card"><b>Kontrollo emailin</b>
       <div class="small" style="margin-top:6px">Dërguam një link konfirmimi te <b>${esc(S.loginSent)}</b>. Hape emailin dhe shtyp linkun, pastaj hyr me fjalëkalimin tënd. Nëse nuk e gjen, shiko edhe te Spam.</div>
