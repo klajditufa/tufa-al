@@ -590,6 +590,14 @@ function companies(){
 function mainCompany(){const all=companies();return all.find(x=>x.key===S.settings.company)||all[0]}
 function viewCompany(){
   const c=mainCompany();
+  if(S.onboard&&!c)return `<div class="top"><h1>Mirë se erdhe</h1><span class="row"><button class="btn ghost" data-act="logout">Dil</button></span></div>
+  <div class="small muted">Para se të fillosh, plotëso të dhënat e kompanisë. Dalin në kokën e kontratës së shitjes dhe mund t'i ndryshosh më vonë te Settings.</div>
+  <div class="card"><h3>Kompania</h3><div class="grid2">
+    <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="organization" placeholder="p.sh. AUTO SHPK"></div>
+    <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="L12345678A" style="text-transform:uppercase"></div>
+    <div class="field wide"><label for="co-new-address">Adresa</label><input id="co-new-address" type="text" autocomplete="street-address" placeholder="Rruga, qyteti"></div>
+    <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="(+355) 6X XXX XXXX"></div></div>
+    <div class="row end"><button class="btn primary" data-act="coadd">Ruaj dhe vazhdo</button></div></div>`;
   const f=(k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${k}">${label}</label><input id="co-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
   return `<div class="top"><h1>Settings</h1><span class="row">${SB?'<button class="btn ghost" data-act="logout">Dil</button>':''}<button class="btn ghost" data-act="back">‹ Mbyll</button></span></div>
   ${c?`<div class="small muted">Këto të dhëna dalin në kokën e kontratës së shitjes. Ruhen vetë sapo del nga fusha.</div>
@@ -915,10 +923,14 @@ document.addEventListener('click',e=>{
   if(act==='company'){S.view='company';S.pwErr='';S.pwMsg='';scrollTo(0,0)}
   else if(act==='coadd'){
     const name=$('#co-new-name').value.trim(),nipt=$('#co-new-nipt').value.trim().toUpperCase();
+    const adr=$('#co-new-address'),tel=$('#co-new-phone'),address=adr?adr.value.trim():'',phone=tel?tel.value.trim():'';
     if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
+    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt)){toast('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).');return}
+    if(adr&&!address){toast('Shkruaj adresën e kompanisë.');return}
     const k=sellerKey({importer_nipt:nipt});S.settings.sellers=S.settings.sellers||{};
     if(companies().length){toast('Kompania është vendosur tashmë.');return}
-    S.settings.sellers[k]={name,nipt};S.settings.company=k;saveSettings();
+    S.settings.sellers[k]=Object.assign({name,nipt},address?{address}:{},phone?{phone}:{});S.settings.company=k;saveSettings();
+    if(S.onboard){S.onboard=false;S.view='list'}
   }
   if(act==='qclear'){S.q='';const q=$('#q');q.value='';b.hidden=true;updateList();q.focus();return}
   if(act==='tab'){S.tab=b.dataset.v}
@@ -1272,6 +1284,12 @@ async function startSupabase(){
   S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
   attachDb(supaDb(SB,cid),timer);
 }
+// Llogari e re (pa kompani dhe pa mjete): hapet njëherë Settings për emrin, NIPT-in dhe adresën.
+function maybeOnboard(){
+  if(!SB||S.onboardChecked||!S.loaded||!S.settingsLoaded)return;
+  S.onboardChecked=true;
+  if(!mainCompany()&&S.view==='list'){S.onboard=true;S.view='company';render()}
+}
 function attachDb(db,timer){
     S.db=db;
     db.collection('vehicles').onSnapshot(snap=>{
@@ -1279,6 +1297,7 @@ function attachDb(db,timer){
       S.vehicles=snap.docs.map(d=>Object.assign(JSON.parse(JSON.stringify(d.data()||{})),{id:d.id}));
       if(S.view!=='form'&&S.view!=='sell'&&S.view!=='contract'&&S.view!=='company'&&!typing()){render();if(S.view==='detail')updatePricingOut()}
       else if(S.view==='list')updateList();
+      maybeOnboard();
     },()=>{clearTimeout(timer);S.loaded=true;if(S.view==='list')render()});
     db.doc('rates/boa').onSnapshot(d=>{S.boa=d.exists?JSON.parse(JSON.stringify(d.data()||{})):null;
       if(!typing()&&(S.view==='company'||S.view==='detail')){render();if(S.view==='detail')updatePricingOut()}},()=>{});
@@ -1287,6 +1306,7 @@ function attachDb(db,timer){
       S.settings=Object.assign({default_pct:'',sellers:{}},d.exists?JSON.parse(JSON.stringify(d.data()||{})):{});
       if(S.view==='list'){if(typing())updateList();else render()}
       else if(S.view==='detail'&&!typing()){render();updatePricingOut()}
+      S.settingsLoaded=true;maybeOnboard();
     },()=>{});
 }
 
