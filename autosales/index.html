@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AutoSales ERP</title>
+<title>TUFA AutoSales ERP</title>
 <meta name="theme-color" content="#0b5c6b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -1085,7 +1085,8 @@ function installHtml(full){
 let SB=null;
 function viewLogin(){
   if(S.loginMode==='newpass')return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div class="brand"><h1>AutoSales ERP</h1><span>Vendos fjalëkalimin e ri</span></div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="brand"><span>Vendos fjalëkalimin e ri</span></div>
     <div class="card">
       <div class="field"><label for="l-pass">Fjalëkalimi i ri</label><input id="l-pass" type="password" autocomplete="new-password"></div>
       <div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>
@@ -1094,7 +1095,8 @@ function viewLogin(){
   if(S.loginMode==='forgot'){
     const lk='background:none;border:0;padding:6px;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
     return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div class="brand"><h1>AutoSales ERP</h1><span>Rivendos fjalëkalimin</span></div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="brand"><span>Rivendos fjalëkalimin</span></div>
     <div class="card">
       ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`
       :`<div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
@@ -1105,7 +1107,8 @@ function viewLogin(){
   const up=S.loginMode==='signup';
   const link='background:none;border:0;padding:6px;color:var(--accent,#0b5c6b);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
   return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
-    <div class="brand"><h1>AutoSales ERP</h1><span>${up?'Krijo llogarinë e kompanisë':'Hyr me llogarinë e kompanisë'}</span></div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;display:flex;justify-content:center"><img src="logo.jpg" width="688" height="710" alt="TUFA AutoSales ERP" style="display:block;width:min(240px,62vw);height:auto"></div>
+    <div class="brand" style="text-align:center"><span>${up?'Krijo llogarinë e kompanisë':'Hyr me llogarinë e kompanisë'}</span></div>
     ${S.loginSent?`<div class="card"><b>Kontrollo emailin</b>
       <div class="small" style="margin-top:6px">Dërguam një link konfirmimi te <b>${esc(S.loginSent)}</b>. Hape emailin dhe shtyp linkun, pastaj hyr me fjalëkalimin tënd. Nëse nuk e gjen, shiko edhe te Spam.</div>
       ${S.loginErr?`<div class="small" style="color:var(--bad);margin-top:6px">${esc(S.loginErr)}</div>`:''}
