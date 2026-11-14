@@ -1201,9 +1201,9 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Fiskalizimi (vetëm në server): lidhja me easyPos ose fature.al për çdo NIPT ---------- */
-// Fiskalizimi është i fikur për momentin: kodi dhe serveri janë gati, por nuk u shfaqet përdoruesve.
-// Për ta ndezur: FISCAL_ON=true (dhe LIVE_ENABLED te funksioni "fiscal" pasi të provohet me token prove).
-const FISCAL_ON=false;
+// Çelësi i fiskalizimit: me false, asnjë pjesë e tij nuk u shfaqet përdoruesve (kodi dhe serveri mbeten).
+// Mjedisi real hapet veçmas, me LIVE_ENABLED te funksioni "fiscal", pasi të provohet me token prove.
+const FISCAL_ON=true;
 const FISC_NAME={easypos:'easyPos',fature:'fature.al'},PAY_NAME={CASH:'Para në dorë',BANK:'Bankë',CARD:'Kartë'};
 const FISC_ERR={bad_token:'Tokeni nuk u pranua nga ofruesi. Kontrollo që është i mjedisit të provës dhe i kopjuar i plotë.',bad_operator:'Kodi i operatorit ka formën ab123cd456.',
   nipt_mismatch:'Ky token i përket një NIPT-i tjetër.',unknown_nipt:'Ky NIPT nuk është në llogari.',provider_error:'Ofruesi nuk u përgjigj si duhet. Provo përsëri pas pak.',
