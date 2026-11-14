@@ -1057,6 +1057,8 @@ async function doSignup(){
       :'Llogaria nuk u krijua. Provo përsëri.');
   }
   if(data&&data.session){S.loginMode='login';startSupabase();return}
+  // Emaili ka tashmë llogari të konfirmuar: Supabase kthen përdorues pa identitete dhe nuk dërgon email.
+  if(data&&data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length){S.loginMode='login';S.loginErr='';S.loginMsg='Ky email ka tashmë llogari. Hyr me fjalëkalimin tënd.';render();return}
   // Supabase nuk tregon nëse emaili ekziston: përdoruesi sheh të njëjtin mesazh në të dyja rastet.
   S.loginSent=email;render();
 }
