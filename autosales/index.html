@@ -195,18 +195,25 @@ function loadLocal(){try{S.vehicles=JSON.parse(localStorage.getItem(LS)||'[]')}c
 const queues={};
 /* Abonimi (vetëm kur programi rri në server): pas afatit kompania mbetet vetëm për lexim. */
 function subDays(){const e=S.sub&&S.sub.expires_on;if(!e)return null;const a=new Date(e+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);return Math.round((a-n)/864e5)}
-function subExpired(){const d=subDays();return d!==null&&d<0}
+function subExpired(){if(S.viewAs)return true;const d=subDays();return d!==null&&d<0}
+/* Administratori që ka hapur kompaninë e një klienti (?shiko=…): sheh gjithçka, nuk ndryshon asgjë. Serveri e refuzon shkrimin gjithsesi. */
+const VIEW_RO='Po e sheh si administrator: vetëm për lexim.';
+const roMsg=()=>S.viewAs?VIEW_RO:SUB_RO;
 const SUB_CONTACT='<a href="https://tufa.al" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">tufa.al</a> ose <a href="tel:+355696052163" style="color:var(--accent);font-weight:600;white-space:nowrap">+355 69 605 2163</a>';
 const SUB_RO='Abonimi ka skaduar. Programi është vetëm për lexim.';
 function subBanner(){
-  const d=subDays();if(d===null||S.view==='login')return '';
+  if(S.view==='login')return '';
+  return (S.viewAs?`<div class="card small" style="border-color:var(--accent);background:var(--tint)"><div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap"><span><b>Administrator · po sheh llogarinë e klientit${S.viewAs.name?' “'+esc(S.viewAs.name)+'”':''}.</b> Vetëm për lexim: asgjë nuk ruhet, nuk fshihet dhe nuk skanohet.</span><a class="btn" href="admin/" style="flex:none">‹ Kthehu te paneli</a></div></div>`:'')+subBanner0();
+}
+function subBanner0(){
+  const d=subDays();if(d===null)return '';
   if(d<0)return `<div class="card" style="border-color:var(--bad);color:var(--bad)"><b>Abonimi skadoi më ${dmy(S.sub.expires_on)}.</b>
     <div class="small" style="color:var(--ink);margin-top:4px">Të dhënat mund t'i shohësh dhe t'i eksportosh, por nuk mund të shtosh, ndryshosh apo skanosh. Për ta rinovuar, kontakto ${SUB_CONTACT}.</div></div>`;
   if(d<=14&&S.view==='list')return `<div class="card small" style="border-color:var(--warn)"><b style="color:var(--warn)">${d===0?'Abonimi skadon sot.':'Abonimi skadon për '+d+' ditë'+(d===0?'':' (më '+dmy(S.sub.expires_on)+').')}</b> Për ta rinovuar, kontakto ${SUB_CONTACT}.</div>`;
   return '';
 }
 function save(v){
-  if(subExpired()){toast(SUB_RO);return}
+  if(subExpired()){toast(roMsg());return}
   const i=S.vehicles.findIndex(x=>x.id===v.id);
   if(i>=0)S.vehicles[i]=v;else S.vehicles.push(v);
   if(S.db){
@@ -216,13 +223,14 @@ function save(v){
   }else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
 }
 function remove(id){
-  if(subExpired()){toast(SUB_RO);return}
+  if(subExpired()){toast(roMsg());return}
   S.vehicles=S.vehicles.filter(x=>x.id!==id);
   if(S.db)S.db.doc('vehicles/'+id).delete().catch(()=>toast('Fshirja dështoi.'));
   else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
 }
 const LSS='autosales.settings';
 function saveSettings(){
+  if(S.viewAs){toast(VIEW_RO);return}
   const data={default_pct:S.settings.default_pct===''?'':num(S.settings.default_pct),eur_rate:num(S.settings.eur_rate)||'',company:S.settings.company||'',nipts:ownKeys(),fiscal_on:S.settings.fiscal_on===true,sellers:JSON.parse(JSON.stringify(S.settings.sellers||{}))};
   if(S.db)S.db.doc('settings/main').set(data).catch(()=>toast('Ruajtja e Marzhit të Fitimit dështoi.'));
   else{try{localStorage.setItem(LSS,JSON.stringify(data))}catch(e){}}
@@ -692,6 +700,7 @@ function viewCompany(){
     <div class="row end"><button class="btn primary" data-act="pwchange" ${S.pwBusy?'disabled':''}>${S.pwBusy?'Po ruhet…':'Ndrysho fjalëkalimin'}</button></div></div>`:''}`;
 }
 async function doChangePass(){
+  if(S.viewAs){toast('Je hyrë si administrator: fjalëkalimi yt ndërrohet nga llogaria jote, jo nga këtu.');return}
   if(!SB||S.pwBusy)return;
   const old=$('#pw-old').value,p1=$('#pw-new').value,p2=$('#pw-new2').value;
   const done=(err,msg)=>{S.pwBusy=false;S.pwErr=err||'';S.pwMsg=msg||'';if(S.view==='company')render()};
@@ -1077,7 +1086,7 @@ async function impScan(fileList){
   S.imp.busy=false;S.imp.msg='';S.imp.stop=false;render();
 }
 function impCommit(){
-  if(subExpired()){toast(SUB_RO);return}
+  if(subExpired()){toast(roMsg());return}
   const ok=S.imp.rows.filter(r=>!r.err);if(!ok.length)return;
   ok.forEach(r=>save(JSON.parse(JSON.stringify(r.d))));
   S.imp={rows:[],busy:false,msg:''};S.tab='stock';S.view='list';toast(ok.length+' mjete u shtuan në stok.');
@@ -1160,7 +1169,7 @@ document.addEventListener('click',e=>{
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='install'){doInstall();return}
-  if(act==='import'){if(subExpired()){toast(SUB_RO);return}S.view='import';scrollTo(0,0);render();return}
+  if(act==='import'){if(subExpired()){toast(roMsg());return}S.view='import';scrollTo(0,0);render();return}
   if(act==='impback'){if(S.imp.busy)S.imp.stop=true;S.view='list';render();return}
   if(act==='imptpl'){impTemplate();return}
   if(act==='impxls'){const f=$('#impxlsfile');if(f){f.value='';f.click()}return}
@@ -1183,7 +1192,7 @@ document.addEventListener('click',e=>{
     return}
   if(act==='fiscalize'){
     const t=S.vehicles.find(x=>x.id===S.id);if(!t||!t.sale||S.fiscBusy)return;
-    if(subExpired()){toast(SUB_RO);return}
+    if(subExpired()){toast(roMsg());return}
     if(!t.sale.fiscal_seq){t.sale.fiscal_seq=1}
     S.fiscBusy=t.id;S.fiscErr=null;save(t);render();
     // Shitja ruhet e para: serveri e lexon mjetin nga baza para se ta dërgojë te ofruesi.
@@ -1193,7 +1202,7 @@ document.addEventListener('click',e=>{
       if(S.view==='detail')render();
     }).catch(e=>{S.fiscBusy=null;S.fiscErr={key:t.id,msg:FISC_ERR[e.code]||FISC_ERR.upstream_error};if(S.view==='detail')render()});
     return}
-  if(act==='co'){S.co=b.dataset.v;try{localStorage.setItem(LSC,S.co)}catch(x){}render();return}
+  if(act==='co'){S.co=b.dataset.v;if(!S.viewAs)try{localStorage.setItem(LSC,S.co)}catch(x){}render();return}
   if(act==='codelask'){S.coDel=b.dataset.v;render();return}
   if(act==='codelno'){S.coDel=null;render();return}
   if(act==='codel'){
@@ -1204,7 +1213,7 @@ document.addEventListener('click',e=>{
     if(S.co===k)S.co='all';saveSettings();if(S.loadSub)setTimeout(S.loadSub,1200);render();return}
   if(act==='coaddmore'){
     const name=$('#co-add-name').value.trim(),nipt=$('#co-add-nipt').value.trim().toUpperCase(),address=$('#co-add-address').value.trim(),ks=ownKeys();
-    if(subExpired()){toast(SUB_RO);return}
+    if(subExpired()){toast(roMsg());return}
     if(ks.length>=MAX_NIPTS){toast('Llogaria ka arritur kufirin prej '+MAX_NIPTS+' NIPT-esh.');return}
     if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
     if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt)){toast('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).');return}
@@ -1229,7 +1238,7 @@ document.addEventListener('click',e=>{
   if(act==='tab'){S.tab=b.dataset.v}
   else if(act==='repmode'){S.rep.mode=b.dataset.v}
   else if(act==='xlsx'){exportReport();return}
-  else if(act==='new'&&subExpired()){toast(SUB_RO);return}
+  else if(act==='new'&&subExpired()){toast(roMsg());return}
   else if(act==='new'){S.niptAck=null;S.ownerTouched=false;S.draft=newDraft();S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
   else if(act==='open'){S.id=b.dataset.id;S.view='detail';S.confirmDel=false;S.confirmUnsell=false;scrollTo(0,0)}
   else if(act==='back'){S.view='list'}
@@ -1386,6 +1395,7 @@ const FISC_ERR={bad_token:'Tokeni nuk u pranua nga ofruesi. Kontrollo që ësht�
   no_connection:'Ky NIPT nuk është lidhur me një ofrues fiskalizimi. Lidhe te Settings.',expired:'Abonimi ka skaduar.',not_sold:'Mjeti nuk është i shitur.',incomplete_sale:'Shitjes i mungon çmimi ose blerësi.',
   live_disabled:'Mjedisi real nuk është hapur ende.',forbidden:'Hyr përsëri në llogari.',upstream_error:'Serveri nuk u arrit. Provo përsëri.'};
 async function fiscalCall(body){
+  if(S.viewAs){toast(VIEW_RO);throw {code:'forbidden'}}
   const {data,error}=await SB.functions.invoke('fiscal',{body});
   if(error){let j={code:'upstream_error'};try{const x=await error.context.json();if(x&&x.code)j=x}catch(e){}throw j}
   return data||{};
@@ -1632,13 +1642,19 @@ async function startSupabase(){
   S.view='list';S.loaded=false;S.slow=false;render();
   const timer=setTimeout(()=>{if(!S.loaded){S.slow=true;if(S.view==='list')render()}},10000);
   try{const u=await SB.auth.getSession();S.userMail=(u.data.session&&u.data.session.user&&u.data.session.user.email)||''}catch(e){}
-  const {data:cid,error}=await SB.rpc('ensure_company');
+  let cid,error;
+  // ?shiko=<id e kompanisë>: vetëm administratori, vetëm lexim. Për këdo tjetër parametri shpërfillet.
+  const as=(location.search.match(/[?&]shiko=([0-9a-f-]{36})\b/i)||[])[1];
+  if(as){const r=await SB.rpc('admin_open_company',{p_company:as});
+    if(!r.error&&r.data){cid=as;S.viewAs={id:as,name:r.data.name||r.data.nipt||''};S.onboardChecked=true}
+    else history.replaceState(null,'',location.pathname)}
+  if(!cid){const r=await SB.rpc('ensure_company');cid=r.data;error=r.error}
   if(error||!cid){clearTimeout(timer);S.view='login';S.loginErr='Hyrja u krye, por kompania nuk u ngarkua. Provo përsëri.';render();return}
   const loadSub=async()=>{try{const {data,error}=await SB.from('subscriptions').select('plan,price,currency,expires_on').eq('company_id',cid).maybeSingle();
     if(!error){const was=JSON.stringify(S.sub||null);S.sub=data||null;if(was!==JSON.stringify(S.sub)&&(S.view==='list'||S.view==='company'))render()}}catch(e){}};
-  loadFiscal();
+  if(!S.viewAs)loadFiscal();
   S.loadSub=loadSub;loadSub();setInterval(loadSub,15*60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadSub()});
-  S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
+  S.sample=supaScan(SB);if(S.viewAs)S.sample.json=async()=>{throw {code:'scan_disabled'}};S.imgLimits=(await S.sample.limits()).images;
   attachDb(supaDb(SB,cid),timer);
 }
 // Llogari e re (pa kompani dhe pa mjete): hapet njëherë Settings për emrin, NIPT-in dhe adresën.
