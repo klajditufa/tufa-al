@@ -182,7 +182,7 @@ function calc(v){
   const sold=v.status==='sold';
   const salePrice=sold?num(v.sale&&v.sale.price):0;
   return {purchase,freight,duty,vat,other,exp,vatInCost,cost,markup,price,priceVat:price*(1+VAT_SALE),
-    salePrice,profit:sold?salePrice-cost:0,customsPaid:duty+vat+other,customsCost:duty+other,taxBase:num(v.tax_base)||num(v.customs_value)+duty,usesStd,sold};
+    salePrice,profit:sold?salePrice-cost:0,customsPaid:duty+vat+other,customsCost:duty+other,taxBase:num(v.tax_base)||(v.source==='local'?purchase:num(v.customs_value)+duty),usesStd,sold};
 }
 
 /* ---------- storage ---------- */
@@ -252,7 +252,7 @@ function header(){
 
 function match(v){
   const q=S.q.trim().toLowerCase();if(!q)return true;
-  const hay=[v.make_model,v.year,v.vin,v.supplier,v.color,v.decl_no,v.invoice_no,v.sale&&v.sale.buyer].join(' ').toLowerCase();
+  const hay=[v.make_model,v.year,v.vin,v.plate,v.supplier,v.color,v.decl_no,v.invoice_no,v.sale&&v.sale.buyer].join(' ').toLowerCase();
   return q.split(/\s+/).every(w=>hay.includes(w));
 }
 function allCalc(){return S.vehicles.map(v=>({v,c:calc(v)})).sort((a,b)=>String(b.v.created||'').localeCompare(String(a.v.created||'')))}
@@ -370,8 +370,8 @@ function reportExportData(){
   }
   const bo=all.filter(x=>inPeriod(buyDate(x.v))).sort(by(x=>buyDate(x.v)));
   return {file:'Raporti-Blerjet-'+(r.year?r.year+(r.month?'-'+r.month:''):'te-gjitha'),sheet:'Blerjet',title:'Blerjet e mjeteve',sub:period+q+made,
-    cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e deklaratës','d',15],['Nr. i deklaratës','s',15],['Baza e taksës','n',14],['TVSH','n',13],['Totali (baza + TVSH)','n',16],['Regjimi','s',10],['Shitësi','s',28],['Blerja','n',13],['Transporti','n',13],['Tarifa e skanimit (kosto)','n',16],['Shpenzime','n',12],['Kosto','n',14],['Gjendja','s',10]],
-    rows:bo.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),v.decl_no||'',R(c.taxBase),R(c.vat),R(c.taxBase+c.vat),v.regime||'',v.supplier||'',R(c.purchase),R(c.freight),R(c.customsCost),R(c.exp),R(c.cost),c.sold?'shitur':'në stok'])};
+    cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',15],['Nr. i deklaratës / faturës','s',17],['Baza e taksës','n',14],['TVSH','n',13],['Totali (baza + TVSH)','n',16],['Regjimi','s',14],['Shitësi','s',28],['Blerja','n',13],['Transporti','n',13],['Tarifa e skanimit (kosto)','n',16],['Shpenzime','n',12],['Kosto','n',14],['Gjendja','s',10]],
+    rows:bo.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),v.source==='local'?(v.invoice_no?'Faturë '+v.invoice_no:''):(v.decl_no||''),R(c.taxBase),R(c.vat),R(c.taxBase+c.vat),v.source==='local'?'Brenda vendit':(v.regime||''),v.supplier||'',R(c.purchase),R(c.freight),R(c.customsCost),R(c.exp),R(c.cost),c.sold?'shitur':'në stok'])};
 }
 let xlsBusy=false;
 async function exportReport(){
@@ -412,22 +412,23 @@ async function exportReport(){
 
 /* ---------- form ---------- */
 const GROUPS=[
- ['Mjeti',[['make_model','Marka dhe modeli'],['year','Viti i prodhimit','n'],['vin','Nr. i shasisë (VIN)','wide'],['color','Ngjyra'],['engine_cc','Cilindrata (cc)','n'],['fuel','Karburanti']]],
- ['Shitësi dhe dokumentet',[['supplier','Shitësi / eksportuesi'],['supplier_country','Shteti'],['importer','Importuesi'],['importer_nipt','NIPT i importuesit'],['invoice_no','Nr. i faturës'],['invoice_date','Data e faturës','d'],['decl_no','Nr. i deklaratës doganore'],['decl_date','Data e deklaratës','d'],['regime','Regjimi i deklaratës (kutia 1)','reg']]],
+ ['Mjeti',[['make_model','Marka dhe modeli'],['year','Viti i prodhimit','n'],['vin','Nr. i shasisë (VIN)','wide'],['plate','Targa'],['color','Ngjyra'],['engine_cc','Cilindrata (cc)','n'],['fuel','Karburanti']]],
+ ['Shitësi dhe dokumentet',[['source','Lloji i blerjes','src'],['supplier','Shitësi / eksportuesi'],['supplier_nipt','NIPT / nr. personal i shitësit'],['supplier_country','Shteti'],['importer','Blerësi / importuesi'],['importer_nipt','NIPT i blerësit / importuesit'],['invoice_no','Nr. i faturës'],['invoice_date','Data e faturës','d'],['decl_no','Nr. i deklaratës doganore'],['decl_date','Data e deklaratës','d'],['regime','Regjimi i deklaratës (kutia 1)','reg']]],
  ['Vlera e blerjes',[['currency','Monedha','cur'],['invoice_value','Vlera e faturës (në monedhë)','n'],['rate','Kursi i këmbimit','n'],['freight_all','Transporti (lekë)','n']]],
- ['Dogana',[['adjustment','Koeficienti i rregullimit','n'],['customs_value','Vlera doganore / statistikore (lekë)','n'],['tax_base','Baza e taksës, kutia 47 (lekë)','n'],['duty','Taksa doganore DOG (lekë)','n'],['vat','TVSH e importit (lekë)','n'],['other_fees','Tarifa e skanimit dhe taksa të tjera (lekë)','n']]]
+ ['Dogana',[['adjustment','Koeficienti i rregullimit','n'],['customs_value','Vlera doganore / statistikore (lekë)','n'],['tax_base','Baza e taksës, kutia 47 (lekë)','n'],['duty','Taksa doganore DOG (lekë)','n'],['vat','TVSH (lekë)','n'],['other_fees','Tarifa e skanimit dhe taksa të tjera (lekë)','n']]]
 ];
 function viewForm(){
   const d=S.draft,isNew=!S.vehicles.some(x=>x.id===d.id);
   const inp=([k,label,t])=>{
     const cls=(t==='wide'?'field wide':'field'),a=S.auto.has(k)?' class="auto"':'';
     if(t==='reg')return `<div class="${cls}"><label for="f-${k}">${label}</label><select id="f-${k}" data-f="${k}"${a}>${['','IM4','IM7'].concat(d[k]&&!['IM4','IM7'].includes(d[k])?[d[k]]:[]).map(c=>`<option value="${c}"${(d[k]||'')===c?' selected':''}>${c||'pa zgjedhur'}</option>`).join('')}</select></div>`;
+    if(t==='src')return `<div class="${cls}"><label for="f-${k}">${label}</label><select id="f-${k}" data-f="${k}"${a}><option value="import"${d[k]!=='local'?' selected':''}>Import (fletë doganore)</option><option value="local"${d[k]==='local'?' selected':''}>Brenda vendit (faturë tatimore)</option></select></div>`;
     if(t==='cur')return `<div class="${cls}"><label for="f-${k}">${label}</label><select id="f-${k}" data-f="${k}"${a}>${['USD','EUR','ALL','GBP','CHF','KRW','JPY'].map(c=>`<option${d[k]===c?' selected':''}>${c}</option>`).join('')}</select></div>`;
     return `<div class="${cls}"><label for="f-${k}">${label}</label><input id="f-${k}" data-f="${k}"${a} ${t==='d'?'type="date"':t==='n'?'type="text" inputmode="decimal"':'type="text"'} value="${esc(d[k]??'')}" autocomplete="off"></div>`;
   };
   const canScan=!!(S.sample&&S.imgLimits);
   const scan=`<div class="scan">
-    <div><h2>Skano fletën doganore</h2><div class="small">Fotografo fletën doganore dhe, po deshe, faturën e shitësit. Pranohet edhe PDF nga skaneri (lexohet faqja e parë). Fushat plotësohen vetë; kontrolloji para ruajtjes.</div></div>
+    <div><h2>Skano fletën doganore ose faturën</h2><div class="small">Për import: fotografo fletën doganore dhe, po deshe, faturën e shitësit. Për blerje brenda vendit: fotografo faturën tatimore (edhe autofaturë). Pranohet edhe PDF (lexohet faqja e parë). Fushat plotësohen vetë; kontrolloji para ruajtjes.</div></div>
     ${canScan?`<div class="row"><label class="btn primary" for="scanfile" ${S.scan.busy?'aria-disabled="true"':''}>Fotografo ose zgjidh foto / PDF</label>
       <input id="scanfile" type="file" accept="${esc((S.imgLimits.mediaTypes||['image/*']).concat('application/pdf').join(','))}" multiple hidden ${S.scan.busy?'disabled':''}>
       ${S.scan.busy?`<span class="row small"><span class="spin"></span>${esc(S.scan.msg)}</span><button class="btn ghost" data-act="scanstop">Ndalo</button>`:''}</div>`
@@ -435,10 +436,12 @@ function viewForm(){
     ${S.scan.err?`<div class="small" style="color:var(--bad)">${esc(S.scan.err)}</div>`:''}
     ${S.auto.size&&!S.scan.busy?`<div class="small">U plotësuan ${S.auto.size} fusha nga skanimi. Janë të ngjyrosura më poshtë.</div>`:''}
   </div>`;
+  const local=d.source==='local',HIDE_LOCAL=['decl_no','decl_date','regime','adjustment','customs_value','tax_base','duty','other_fees','freight_all'],HIDE_IMPORT=['supplier_nipt','plate'];
+  const shown=f=>f.filter(x=>local?!HIDE_LOCAL.includes(x[0]):!HIDE_IMPORT.includes(x[0])||d[x[0]]);
   return `<div class="top"><h1>${isNew?'Blerje e re':'Ndrysho blerjen'}</h1><button class="btn ghost" data-act="cancel">Anulo</button></div>
   ${scan}
-  ${GROUPS.map(([t,f])=>`<div class="card"><h3>${t}</h3><div class="grid2">${f.map(inp).join('')}</div>
-    ${t==='Dogana'?`<label class="check"><input type="checkbox" id="f-vatded" data-f="vat_deductible" ${d.vat_deductible!==false?'checked':''}><span>TVSH-ja e importit është e zbritshme (nuk hyn në koston e mjetit)</span></label>`:''}</div>`).join('')}
+  ${GROUPS.map(([t,f])=>`<div class="card"><h3>${t==='Dogana'&&local?'TVSH e blerjes':t}</h3><div class="grid2">${shown(f).map(inp).join('')}</div>
+    ${t==='Dogana'?`<label class="check"><input type="checkbox" id="f-vatded" data-f="vat_deductible" ${d.vat_deductible!==false?'checked':''}><span>TVSH-ja e ${local?'blerjes':'importit'} është e zbritshme (nuk hyn në koston e mjetit)</span></label>`:''}</div>`).join('')}
   <div class="card" id="fsum"></div>
   <div class="row end"><button class="btn" data-act="cancel">Anulo</button><button class="btn primary" data-act="savedraft">Ruaj blerjen</button></div>`;
 }
@@ -456,10 +459,10 @@ function updateFormSummary(){
   if(c.taxBase>0&&c.vat>0){const ev=0.2*c.taxBase,ok=Math.abs(ev-c.vat)/c.vat<0.01;checks.push(`<span class="pill ${ok?'ok':'bad'}">${ok?'TVSH 20% përputhet':'TVSH ndryshon nga 20%: pritej '+fmt(ev)}</span>`)}
   el.innerHTML=`<h3>Kosto e mjetit</h3><div class="kv">
     <div><span>Blerja (${fmt(num(d.invoice_value),2)} ${esc(d.currency||'')} × ${d.currency==='ALL'?1:fmt(num(d.rate),3)})</span><span>${lek(c.purchase)}</span></div>
-    <div><span>Transporti</span><span>${lek(c.freight)}</span></div>
-    <div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>
-    <div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>
-    <div class="${c.vatInCost?'':'off'}"><span>TVSH e importit${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
+    ${d.source==='local'&&!c.freight?'':`<div><span>Transporti</span><span>${lek(c.freight)}</span></div>`}
+    ${d.source==='local'&&!c.duty?'':`<div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>`}
+    ${d.source==='local'&&!c.other?'':`<div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>`}
+    <div class="${c.vatInCost?'':'off'}"><span>TVSH e ${d.source==='local'?'blerjes':'importit'}${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
     <div class="total"><span>Kosto gjithsej</span><span>${lek(c.cost)}</span></div></div>
     ${checks.length?`<div class="row">${checks.join('')}</div>`:''}`;
 }
@@ -469,9 +472,9 @@ function viewDetail(){
   const v=S.vehicles.find(x=>x.id===S.id);
   if(!v)return header()+`<div class="empty">Mjeti nuk u gjet.</div><button class="btn" data-act="back">Kthehu te lista</button>`;
   const c=calc(v),p=v.pricing||{mode:'pct',value:''};
-  const info=[['Shitësi',[v.supplier,v.supplier_country].filter(Boolean).join(', ')],['Importuesi',[v.importer,v.importer_nipt].filter(Boolean).join(' · ')],
+  const info=[['Blerja',v.source==='local'?'Brenda vendit, me faturë tatimore':''],['Shitësi',[[v.supplier,v.supplier_nipt].filter(Boolean).join(' · '),v.supplier_country].filter(Boolean).join(', ')],[v.source==='local'?'Blerësi':'Importuesi',[v.importer,v.importer_nipt].filter(Boolean).join(' · ')],
     ['Fatura',[v.invoice_no,dmy(v.invoice_date)].filter(Boolean).join(' · ')],['Deklarata doganore',[v.decl_no,dmy(v.decl_date),v.regime].filter(Boolean).join(' · ')],
-    ['Motori',[v.engine_cc?v.engine_cc+' cc':'',v.fuel].filter(Boolean).join(' · ')],['Ngjyra',v.color]].filter(r=>r[1]);
+    ['Motori',[v.engine_cc?v.engine_cc+' cc':'',v.fuel].filter(Boolean).join(' · ')],['Targa',v.plate],['Ngjyra',v.color]].filter(r=>r[1]);
   const pricing=c.sold?'':`<div class="card"><h3>Çmimi i shitjes</h3>
     <div class="row"><div class="seg" role="group" aria-label="Mënyra e marzhit">
       <button data-act="pmode" data-v="pct" aria-pressed="${p.mode!=='val'}">% mbi koston</button>
@@ -497,10 +500,10 @@ function viewDetail(){
   ${v.regime==='IM7'?`<div class="card" style="border-color:var(--bad);color:var(--bad)"><b>Deklarata është IM7, magazinë doganore.</b><span class="small">Mjeti nuk është zhdoganuar përfundimisht. Për ta shitur duhet deklarata IM4; kur ta kesh, ndrysho të dhënat e blerjes.</span></div>`:''}
   <div class="card"><h3>Kosto e mjetit</h3><div class="kv">
     <div><span>Blerja (${fmt(num(v.invoice_value),2)} ${esc(v.currency||'')} × ${v.currency==='ALL'?1:fmt(num(v.rate),3)})</span><span>${lek(c.purchase)}</span></div>
-    <div><span>Transporti</span><span>${lek(c.freight)}</span></div>
-    <div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>
-    <div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>
-    <div class="${c.vatInCost?'':'off'}"><span>TVSH e importit${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
+    ${v.source==='local'&&!c.freight?'':`<div><span>Transporti</span><span>${lek(c.freight)}</span></div>`}
+    ${v.source==='local'&&!c.duty?'':`<div><span>Taksa doganore</span><span>${lek(c.duty)}</span></div>`}
+    ${v.source==='local'&&!c.other?'':`<div><span>Tarifa e skanimit dhe taksa të tjera</span><span>${lek(c.other)}</span></div>`}
+    <div class="${c.vatInCost?'':'off'}"><span>TVSH e ${v.source==='local'?'blerjes':'importit'}${c.vatInCost?'':' (e zbritshme)'}</span><span>${lek(c.vat)}</span></div>
     <div><span>Shpenzime të tjera</span><span>${lek(c.exp)}</span></div>
     <div class="total"><span>Kosto gjithsej</span><span>${lek(c.cost)}</span></div></div></div>
   ${pricing}
@@ -667,7 +670,7 @@ function contractData(v){
     seller:{name:coName||B,lines:[sel.nipt?'NIPT: '+sel.nipt:'',sel.address||'',sel.phone?'Tel: '+sel.phone:''].filter(Boolean)},
     buyer:{name:s.buyer||B,lines:[(s.buyer_is_nipt?'NIPT: ':'Nr. personal: ')+(s.buyer_id||B),s.city?'Qyteti: '+s.city:''].filter(Boolean)},
     car:[v.make_model,v.year].filter(Boolean).join(' ')||'Automjet',vin:v.vin||B,
-    specs:[['Viti i prodhimit',v.year],['Cilindrata',v.engine_cc?num(v.engine_cc)+' cc':''],['Karburanti',v.fuel],['Deklarata doganore',v.decl_no],['Data e zhdoganimit',dmy(v.decl_date)]].filter(r=>r[1]).map(r=>[r[0],String(r[1])]),
+    specs:[['Viti i prodhimit',v.year],['Cilindrata',v.engine_cc?num(v.engine_cc)+' cc':''],['Karburanti',v.fuel],['Targa',v.plate],['Deklarata doganore',v.decl_no],['Data e zhdoganimit',dmy(v.decl_date)]].filter(r=>r[1]).map(r=>[r[0],String(r[1])]),
     net:m(c.salePrice),vat:m(c.salePrice*VAT_SALE),total:m(c.salePrice*(1+VAT_SALE)),unit,
     text:[`Shitësi, me vullnet të lirë dhe të plotë, i shet blerësit automjetin e mësipërm për shumën ${m(c.salePrice*(1+VAT_SALE))} ${unit}, me TVSH, e cila është likuiduar plotësisht. Me nënshkrimin e kësaj kontrate pronësia i kalon blerësit dhe shitësi nuk mban më përgjegjësi për mjetin. Fatura tatimore dorëzohet pas nënshkrimit.`]};
 }
@@ -782,10 +785,14 @@ function readPricing(v){
 
 /* ---------- scanning ---------- */
 let scanCtl=null;
-const PROMPT=`Je një lexues dokumentesh doganore shqiptare. Imazhet janë foto të një deklarate doganore importi (DPD - ASYCUDAWorld) për një automjet dhe, ndoshta, të faturës së shitësit të huaj. Një faqe e gjatë mund të jetë ndarë në gjysmën e sipërme dhe të poshtme me pak mbivendosje.
+const PROMPT=`Je një lexues dokumentesh shqiptare për blerjen e një automjeti. Imazhet janë foto të NJËRIT prej dy llojeve të dokumentit:
+A) deklaratë doganore importi (DPD - ASYCUDAWorld) dhe, ndoshta, fatura e shitësit të huaj; ose
+B) faturë tatimore shqiptare për blerje brenda vendit ("Faturë Tatimore", edhe autofaturë / vetëfaturim), me Shitësin, Blerësin, NIVF dhe kod QR.
+Një faqe e gjatë mund të jetë ndarë në gjysmën e sipërme dhe të poshtme me pak mbivendosje.
 
 Lexo me kujdes shifrat dhe përgjigju VETËM me një objekt JSON me këta çelësa (null kur nuk lexohet; numrat si numra pa presje mijëshesh; datat si YYYY-MM-DD):
 {
+ "doc_type": "customs" për llojin A ose "invoice" për llojin B,
  "supplier": kutia 2 Eksportuesi (emri), "supplier_country": shteti i eksportuesit,
  "importer": kutia 8 Marrësi (emri), "importer_nipt": numri "Nr" i marrësit,
  "customs_office": zyra doganore (p.sh. "AL144000 Durrës MBM"), "decl_no": referenca e deklaratës (p.sh. "R 15105"), "decl_date": data e deklaratës, "regime": kutia 1 Deklarata, lloji pa hapësirë (p.sh. "IM4" ose "IM7"),
@@ -798,6 +805,13 @@ Lexo me kujdes shifrat dhe përgjigju VETËM me një objekt JSON me këta çelë
  "taxes_total": totali i taksave në kutinë 47, "fees_total": "Totali i" tarifave në detajet e llogarisë (rreshti para totalit të fundit), "grand_total": totali i fundit i paguar në lekë,
  "invoice_no": numri i faturës së shitësit, "invoice_date": data e faturës, "color": ngjyra e mjetit nga fatura, "invoice_price": çmimi i mjetit në faturë, "invoice_freight": transporti në faturë (në monedhë)
 }
+Për llojin B (faturë tatimore brenda vendit) plotëso kështu dhe lëri null fushat doganore (customs_office, decl_no, decl_date, regime, freight_all, adjustment, customs_value, taxes, taxes_total, fees_total, grand_total):
+ "supplier": emri i Shitësit, "supplier_nipt": NIPT-i ose numri personal i Shitësit, "supplier_country": "Shqipëri",
+ "importer": emri i Blerësit, "importer_nipt": NIPT-i i Blerësit,
+ "invoice_no": Numri i Faturës, "invoice_date": data e faturës, "currency": Valuta e Faturës (ALL kur është në lekë), "rate": Kursi (null kur fatura është në lekë),
+ "invoice_value": totali "Vlera pa TVSH" në monedhën e faturës, "invoice_vat_all": totali i TVSH-së NË LEKË (rreshti "TOTALI NË ALL"; kur fatura është në lekë, TVSH-ja e totalit; 0 kur s'ka TVSH),
+ "make_model": marka dhe modeli nga përshkrimi i artikullit (p.sh. "BMW Seria 7 730LD"; një markë e shkruar qartazi gabim, si "MBW", shkruhet saktë "BMW"), "year": viti, "vin": shasia, "plate": targa (p.sh. "AB207YJ"), "engine_cc", "fuel", "color" kur shkruhen,
+ "nivf": kodi NIVF.
 VIN-i lexohet shkronjë për shkronjë; krahasoje në të gjitha vendet ku shfaqet. Përshkrimi i mjetit mund të ketë renditje të ndryshme (p.sh. "MERCEDES BENZ CLS VP 2015.NAFTE.CIL 2143 CC"). Mos shpik vlera.`;
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function pdfFirstPage(file){
@@ -850,14 +864,24 @@ async function runScan(fileList){
 }
 function applyScan(r){
   const d=S.draft,set=(k,v)=>{if(v===null||v===undefined||v==='')return;d[k]=v;S.auto.add(k)};
-  for(const k of ['supplier','supplier_country','importer','importer_nipt','customs_office','decl_no','make_model','fuel','invoice_no','color'])set(k,r[k]&&String(r[k]).trim());
+  const local=r.doc_type==='invoice'||(!r.decl_no&&!!r.nivf);
+  if(local){d.source='local';d.regime='';for(const k of ['decl_no','decl_date','customs_office','adjustment','customs_value','freight_all'])delete d[k]}
+  else if(r.doc_type==='customs'||r.decl_no)d.source='import';
+  for(const k of ['supplier','supplier_country','importer','importer_nipt','customs_office','decl_no','make_model','fuel','invoice_no','color','nivf'])set(k,r[k]&&String(r[k]).trim());
+  for(const k of ['supplier_nipt','plate'])if(r[k])set(k,String(r[k]).toUpperCase().replace(/[^A-Z0-9]/g,''));
   for(const k of ['decl_date','invoice_date'])if(/^\d{4}-\d{2}-\d{2}$/.test(r[k]||''))set(k,r[k]);
   for(const k of ['freight_all','invoice_value','rate','engine_cc','year','adjustment','customs_value'])if(r[k]!==null&&r[k]!==undefined&&num(r[k]))set(k,num(r[k]));
   if(num(d.adjustment)>=10){const base=num(d.invoice_value)*num(d.rate)+num(d.freight_all),g=base>0&&num(d.customs_value)>0?num(d.customs_value)/base:0;d.adjustment=g>0.5&&g<10?Math.round(g*1000)/1000:num(d.adjustment)/1000}
   if(r.currency)set('currency',String(r.currency).toUpperCase().slice(0,3));
-  if(r.regime){set('regime',String(r.regime).toUpperCase().replace(/[^A-Z0-9]/g,''));if(d.regime==='IM7')toast('Kjo deklaratë është IM7, magazinë doganore. Për shitje duhet IM4.')}
+  if(r.regime&&!local){set('regime',String(r.regime).toUpperCase().replace(/[^A-Z0-9]/g,''));if(d.regime==='IM7')toast('Kjo deklaratë është IM7, magazinë doganore. Për shitje duhet IM4.')}
   if(r.vin)set('vin',String(r.vin).toUpperCase().replace(/[^A-Z0-9]/g,''));
   if(!num(d.invoice_value)&&num(r.invoice_price))set('invoice_value',num(r.invoice_price));
+  if(local){
+    if(d.currency==='ALL')delete d.rate;
+    d.vat=num(r.invoice_vat_all);d.duty=0;d.other_fees=0;
+    const base=num(d.invoice_value)*(d.currency==='ALL'?1:num(d.rate));if(base>0){d.tax_base=Math.round(base*100)/100;S.auto.add('tax_base')}
+    ['vat','source'].forEach(k=>S.auto.add(k));return;
+  }
   const tx=Array.isArray(r.taxes)?r.taxes:[];
   if(tx.length||r.grand_total){
     const amt=re=>tx.filter(t=>re.test(String(t.code||''))).reduce((a,t)=>a+num(t.amount),0);
@@ -1009,7 +1033,9 @@ document.addEventListener('input',e=>{
   if(t.dataset.f&&S.view==='form'){
     const k=t.dataset.f;
     S.draft[k]=t.type==='checkbox'?t.checked:(k==='vin'?t.value.toUpperCase().trim():t.value);
-    S.auto.delete(k);t.classList.remove('auto');updateFormSummary();
+    S.auto.delete(k);t.classList.remove('auto');
+    if(k==='source'){if(t.value==='local'){S.draft.regime='';if(!S.draft.supplier_country)S.draft.supplier_country='Shqipëri'}else if(!S.draft.regime)S.draft.regime='IM4';render();return}
+    updateFormSummary();
   }else if(t.dataset.q!==undefined&&S.view==='list'){S.q=t.value;$('#qx').hidden=!t.value;updateList();
   }else if(t.dataset.std!==undefined&&S.view==='list'){S.settings.default_pct=t.value.trim()===''?'':num(t.value);updateList();
   }else if(t.dataset.co&&S.view==='company'){
