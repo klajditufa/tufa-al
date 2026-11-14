@@ -111,7 +111,7 @@ const daysTo=s=>{if(!s)return null;const a=new Date(s+'T00:00:00'),b=new Date(to
 const CUR=['EUR','ALL'];
 
 let SB=null;
-const S={view:'boot',err:'',busy:false,mail:'',list:[],q:'',filter:'all',open:null,dErr:'',dMsg:'',dBusy:false,delAsk:null};
+const S={view:'boot',err:'',busy:false,mail:'',list:[],q:'',filter:'all',open:null,dErr:'',dMsg:'',dBusy:false,delAsk:null,orphans:[],log:[],pwFor:null,delCo:false,oAsk:null,oMsg:'',oErr:''};
 
 function status(c){
   const e=c.sub&&c.sub.expires_on,d=daysTo(e);
@@ -167,6 +167,7 @@ function render(){
       <span class="small muted">${rows.length} nga ${L.length}</span></div>
     ${S.err?`<div class="msg bad">${esc(S.err)}</div>`:''}
     <div id="list">${listHtml(rows)}</div>
+    <div id="extra" style="display:flex;flex-direction:column;gap:18px">${extraHtml()}</div>
     <dialog id="dlg"></dialog>`;
   if(S.open)openDialog(false);
 }
@@ -198,8 +199,10 @@ function dialogHtml(c){
       <div class="small">${nipts(c).map((n,i)=>`<span class="mono">${esc(n.nipt)}</span> ${esc(n.name)} <span class="muted">· ${i?'shtesë, 6 000 L':'kryesor, 12 000 L'}</span>`).join('<br>')}</div>
       <div class="small muted" style="margin-top:6px">Çmimi vjetor sipas rregullit: ${money(12000+6000*(nipts(c).length-1),'ALL')}</div></div>`:''}
     <div class="card"><h3>Llogaria</h3>
-      <div class="small">${c.users.map(u=>`${esc(u.email)} <span class="muted">· hyrja e fundit ${dmyT(u.last_sign_in_at)}</span>`).join('<br>')||'<span class="muted">Asnjë përdorues</span>'}</div>
-      <div class="small muted" style="margin-top:6px">Regjistruar ${dmyT(c.created_at)} · ${c.vehicles} mjete, ${c.sold} të shitura · veprimi i fundit ${dmyT(c.last_activity)}</div></div>
+      ${c.users.map(u=>userRow(u)).join('')||'<div class="small muted">Asnjë përdorues</div>'}
+      <div class="small muted" style="margin-top:8px">Regjistruar ${dmyT(c.created_at)} · ${c.vehicles} mjete, ${c.sold} të shitura · veprimi i fundit ${dmyT(c.last_activity)}</div>
+      <div class="row" style="margin-top:12px"><a class="btn" href="../?shiko=${encodeURIComponent(c.id)}" target="_blank" rel="noopener">Hape si klienti · vetëm lexim</a>
+        <span class="small muted">Sheh programin siç e sheh klienti, pa mundur të ndryshosh asgjë.</span></div></div>
     <div class="card"><h3>Abonimi</h3><div class="grid">
       <div class="field"><label for="s-plan">Plani</label><input id="s-plan" type="text" value="${esc(b.plan||'')}" placeholder="p.sh. Mujor, Vjetor, Provë" autocomplete="off" list="plans"><datalist id="plans"><option value="Provë"><option value="Mujor"><option value="Vjetor"></datalist></div>
       <div class="field"><label for="s-price">Çmimi</label><input id="s-price" type="number" min="0" step="0.01" inputmode="decimal" value="${b.price==null?'':esc(b.price)}"></div>
@@ -220,7 +223,37 @@ function dialogHtml(c){
     <div class="card"><h3>Pagesat (${c.payments.length}) · ${paid(c)}</h3>
       ${c.payments.length?c.payments.map(p=>`<div class="pay"><span class="mono">${dmy(p.paid_on)}</span><span class="small muted">${p.months?p.months+' muaj':''}${p.note?(p.months?' · ':'')+esc(p.note):''}</span><b class="num">${money(p.amount,p.currency)}</b>
         ${S.delAsk===p.id?`<span class="row"><button class="btn sm danger" data-act="delpay" data-pid="${esc(p.id)}">Po, fshije</button><button class="btn sm" data-act="delno">Jo</button></span>`:`<button class="btn sm" data-act="delask" data-pid="${esc(p.id)}" aria-label="Fshi pagesën">Fshi</button>`}</div>`).join('')
-      :'<div class="small muted">Nuk ka ende pagesa.</div>'}</div></div>`;
+      :'<div class="small muted">Nuk ka ende pagesa.</div>'}</div>
+    <div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Fshi llogarinë</h3>
+      ${c.users.some(u=>u.admin)?'<div class="small muted">Kjo është kompania e administratorit dhe nuk fshihet nga paneli.</div>'
+      :!S.delCo?`<div class="row" style="justify-content:space-between"><span class="small muted">Fshin kompaninë, mjetet, pagesat dhe përdoruesit e saj. Nuk kthehet më.</span><button class="btn danger" data-act="delco">Fshi llogarinë…</button></div>`
+      :`<div class="small">Do të fshihen përgjithmonë: <b>${c.vehicles} mjete</b>, Settings, abonimi, <b>${c.payments.length} pagesa</b> dhe ${c.users.length===1?'përdoruesi':'përdoruesit'} <b>${c.users.map(u=>esc(u.email)).join(', ')||'—'}</b>. Kjo nuk kthehet më; nëse të duhen të dhënat, hape si klienti dhe shkarko Excel-in më parë.</div>
+        <div class="field" style="margin-top:10px"><label for="del-word">Për ta konfirmuar, shkruaj <span class="mono">${esc(delWord(c))}</span></label><input id="del-word" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+        <div class="row end" style="margin-top:12px"><button class="btn" data-act="delcono">Anulo</button><button class="btn danger" data-act="delcogo" ${S.dBusy?'disabled':''}>Fshije përgjithmonë</button></div>`}</div></div>`;
+}
+const delWord=c=>(c.nipt||'').toUpperCase()||'FSHI';
+// Një përdorues me veprimet e ndihmës: link rivendosjeje, fjalëkalim i përkohshëm, konfirmim emaili.
+function userRow(u,orphan){
+  const acts=u.admin?'<span class="chip none">Administrator</span>'
+    :`<button class="btn sm" data-act="ureset" data-uid="${esc(u.id)}" ${S.dBusy?'disabled':''}>Dërgo link rivendosjeje</button>
+      <button class="btn sm" data-act="upw" data-uid="${esc(u.id)}">Vendos fjalëkalim</button>
+      ${u.confirmed?'':`<button class="btn sm" data-act="uconfirm" data-uid="${esc(u.id)}" ${S.dBusy?'disabled':''}>Konfirmo emailin</button>`}
+      ${orphan?(S.oAsk===u.id?`<button class="btn sm danger" data-act="udel" data-uid="${esc(u.id)}">Po, fshije</button><button class="btn sm" data-act="udelno">Jo</button>`:`<button class="btn sm danger" data-act="udelask" data-uid="${esc(u.id)}">Fshi</button>`):''}`;
+  return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+    <div class="row" style="justify-content:space-between"><div class="small"><b>${esc(u.email||'(pa email)')}</b> ${u.confirmed===false?'<span class="chip warn">Email i pakonfirmuar</span>':''}
+      <div class="muted">${orphan?'regjistruar '+dmyT(u.created_at)+' · ':''}hyrja e fundit ${dmyT(u.last_sign_in_at)}</div></div><div class="row">${acts}</div></div>
+    ${S.pwFor===u.id?`<div class="row" style="margin-top:8px;align-items:flex-end"><div class="field" style="flex:1 1 200px"><label for="pw-new">Fjalëkalimi i ri (të paktën 8 shenja)</label><input id="pw-new" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="72"></div>
+      <button class="btn sm" data-act="pwgen">Gjenero</button><button class="btn sm primary" data-act="pwsave" data-uid="${esc(u.id)}" ${S.dBusy?'disabled':''}>Ruaje</button><button class="btn sm" data-act="pwno">Anulo</button></div>
+      <div class="small muted" style="margin-top:6px">Jepja klientit me telefon dhe thuaji ta ndërrojë te Settings sapo të hyjë. Më e sigurt është linku i rivendosjes, se fjalëkalimin e vendos vetë klienti.</div>`:''}</div>`;
+}
+function extraHtml(){
+  const o=S.orphans,L=S.log,A={view:'Hapje si klienti',send_reset:'Link rivendosjeje',set_password:'Fjalëkalim i ri',confirm_email:'Email i konfirmuar',delete_company:'Kompani e fshirë',delete_user:'Llogari e fshirë'};
+  return `${o.length?`<div class="card"><h3>Llogari pa kompani (${o.length})</h3>
+      <div class="small muted" style="margin-bottom:4px">Janë regjistruar por s'kanë hyrë ende në program, zakonisht sepse s'kanë konfirmuar emailin.</div>
+      ${o.map(u=>userRow(u,true)).join('')}
+      ${S.oErr?`<div class="msg bad" style="margin-top:8px">${esc(S.oErr)}</div>`:''}${S.oMsg?`<div class="msg good" style="margin-top:8px">${esc(S.oMsg)}</div>`:''}</div>`:''}
+    <details class="card"><summary style="cursor:pointer;font-weight:600">Regjistri i veprimeve të administratorit (${L.length})</summary>
+      <div style="margin-top:10px">${L.length?L.map(l=>`<div class="pay" style="grid-template-columns:auto auto 1fr"><span class="mono">${dmyT(l.at)} ${esc(new Date(l.at).toTimeString().slice(0,5))}</span><b class="small">${esc(A[l.action]||l.action)}</b><span class="small muted">${esc(l.detail||'')}</span></div>`).join(''):'<div class="small muted">Ende asnjë veprim.</div>'}</div></details>`;
 }
 function openDialog(show){
   const c=S.list.find(x=>x.id===S.open),d=$('#dlg');if(!c||!d){S.open=null;return}
@@ -239,7 +272,47 @@ function refreshDialog(keepForm){
 async function load(){
   const {data,error}=await SB.rpc('admin_overview');
   if(error){S.err='Lista nuk u ngarkua. Provo “Rifresko”.';return false}
-  S.err='';S.list=Array.isArray(data)?data:[];return true;
+  S.err='';S.list=Array.isArray(data)?data:[];
+  const [o,l]=await Promise.all([SB.rpc('admin_orphans'),SB.rpc('admin_log_list')]);
+  S.orphans=!o.error&&Array.isArray(o.data)?o.data:[];S.log=!l.error&&Array.isArray(l.data)?l.data:[];
+  return true;
+}
+const ADM_ERR={forbidden:'Kjo llogari nuk ka të drejta administratori.',is_admin:'Llogaria e administratorit nuk ndryshohet nga paneli.',not_found:'Nuk u gjet. Rifresko listën.',
+  rate_limited:'Sapo iu dërgua një email. Prit një minutë dhe provo përsëri.',mail_failed:'Emaili nuk u dërgua. Provo përsëri pas pak.',weak_password:'Fjalëkalimi duhet të ketë të paktën 8 shenja.',
+  confirm_mismatch:'Fjala e konfirmimit nuk përputhet.',own_company:'Kompania jote nuk fshihet nga paneli.',has_company:'Kjo llogari ka kompani; fshije nga kartela e kompanisë.',delete_failed:'Fshirja dështoi. Provo përsëri.'};
+async function adminCall(body){
+  const {data,error}=await SB.functions.invoke('admin',{body});
+  if(error){let code='';try{const j=await error.context.json();code=j&&j.code}catch(e){}return {error:ADM_ERR[code]||'Veprimi dështoi. Provo përsëri.'}}
+  return {data:data||{}};
+}
+// Mesazhi del te dritarja e kompanisë kur është e hapur, përndryshe te lista e llogarive pa kompani.
+function say(err,msg){
+  if(S.open){S.dErr=err||'';S.dMsg=msg||'';if(err)refreshDialog(true);else afterChange()}else{S.oErr=err||'';S.oMsg=msg||'';const x=$('#extra');if(x)x.innerHTML=extraHtml()}
+}
+async function userAct(action,uid,extra,okMsg){
+  if(S.dBusy)return;S.dBusy=true;
+  const r=await adminCall(Object.assign({action,user_id:uid},extra||{}));
+  S.dBusy=false;
+  if(r.error){say(r.error);return false}
+  await load();say('',okMsg);return true;
+}
+function genPass(){
+  const A='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint32Array(12);crypto.getRandomValues(b);
+  return Array.from(b,n=>A[n%A.length]).join('');
+}
+async function delCompany(){
+  const c=S.list.find(x=>x.id===S.open);if(!c||S.dBusy)return;
+  const word=($('#del-word').value||'').trim().toUpperCase();
+  if(word!==delWord(c)){S.dErr='Shkruaj “'+delWord(c)+'” për ta konfirmuar fshirjen.';S.dMsg='';refreshDialog(true);return}
+  S.dBusy=true;S.dErr='';refreshDialog(true);
+  const r=await adminCall({action:'delete_company',company_id:c.id,confirm:word});
+  S.dBusy=false;
+  if(r.error){S.dErr=r.error;refreshDialog(true);return}
+  const d=$('#dlg');if(d)d.close();S.open=null;S.delCo=false;
+  await load();S.err='';render();
+  S.oErr='';S.oMsg='';
+  const k=(r.data.kept||[]).length;
+  $('#list').insertAdjacentHTML('beforebegin',`<div class="msg good">U fshi “${esc(c.name||c.nipt||'kompania')}”: ${r.data.vehicles||0} mjete dhe ${(r.data.removed||[]).length} përdorues.${k?' '+k+' përdorues mbetën (kanë kompani tjetër ose s\'u fshinë dot).':''}</div>`);
 }
 async function start(){
   S.view='boot';render();
@@ -300,6 +373,7 @@ function afterChange(){
   $('#list').innerHTML=listHtml(filtered());
   document.querySelectorAll('.tiles').forEach(t=>{const tmp=document.createElement('div');const L=S.list,st=L.map(status),cnt=k=>st.filter(s=>s.k===k).length;
     const b=t.querySelectorAll('.tile b');if(b.length>=6){b[0].textContent=L.length;b[1].textContent=cnt('active');b[2].textContent=cnt('soon');b[3].textContent=cnt('expired');b[4].textContent=cnt('none');b[5].textContent=totals(L)}});
+  const x=$('#extra');if(x)x.innerHTML=extraHtml();
   if(d&&S.open){d.innerHTML=dialogHtml(S.list.find(x=>x.id===S.open)||{users:[],payments:[]});d.scrollTop=top}
 }
 
@@ -309,7 +383,21 @@ document.addEventListener('click',async e=>{
   if(act==='logout'){try{await SB.auth.signOut({scope:'local'})}catch(x){}clearLocalSession();location.reload();return}
   if(act==='reload'){b.disabled=true;await load();render();return}
   if(act==='filter'){S.filter=b.dataset.f;render();return}
-  if(act==='open'){S.open=b.dataset.id;S.dErr='';S.dMsg='';S.delAsk=null;openDialog(true);return}
+  if(act==='open'){S.open=b.dataset.id;S.dErr='';S.dMsg='';S.delAsk=null;S.pwFor=null;S.delCo=false;openDialog(true);return}
+  const uid=b.dataset.uid,redraw=()=>{if(S.open)refreshDialog(true);else{const x=$('#extra');if(x)x.innerHTML=extraHtml()}};
+  if(act==='ureset')return userAct('send_reset',uid,null,'Linku i rivendosjes iu dërgua klientit me email.');
+  if(act==='uconfirm')return userAct('confirm_email',uid,null,'Emaili u konfirmua. Klienti mund të hyjë tani.');
+  if(act==='upw'){S.pwFor=S.pwFor===uid?null:uid;redraw();const i=$('#pw-new');if(i)i.focus();return}
+  if(act==='pwno'){S.pwFor=null;redraw();return}
+  if(act==='pwgen'){const i=$('#pw-new');if(i){i.value=genPass();i.select()}return}
+  if(act==='pwsave'){const pw=($('#pw-new')||{}).value||'';if(pw.length<8){say(ADM_ERR.weak_password);return}
+    if(await userAct('set_password',uid,{password:pw},'Fjalëkalimi u ndryshua. Jepja klientit dhe thuaji ta ndërrojë te Settings.')){S.pwFor=null;redraw()}return}
+  if(act==='udelask'){S.oAsk=uid;redraw();return}
+  if(act==='udelno'){S.oAsk=null;redraw();return}
+  if(act==='udel'){S.oAsk=null;return userAct('delete_user',uid,null,'Llogaria u fshi.')}
+  if(act==='delco'){S.delCo=true;S.dErr='';S.dMsg='';refreshDialog(true);const i=$('#del-word');if(i)i.focus();return}
+  if(act==='delcono'){S.delCo=false;refreshDialog(true);return}
+  if(act==='delcogo')return delCompany();
   if(act==='close'){const d=$('#dlg');if(d)d.close();return}
   if(act==='savesub')return saveSub();
   if(act==='addpay')return addPay();
@@ -317,7 +405,7 @@ document.addEventListener('click',async e=>{
   if(act==='delno'){S.delAsk=null;refreshDialog(true);return}
   if(act==='delpay')return delPay(b.dataset.pid);
 });
-document.addEventListener('close',e=>{if(e.target.id==='dlg'){S.open=null;S.delAsk=null}},true);
+document.addEventListener('close',e=>{if(e.target.id==='dlg'){S.open=null;S.delAsk=null;S.pwFor=null;S.delCo=false}},true);
 document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;$('#list').innerHTML=listHtml(filtered());const n=$('.tools .muted');if(n)n.textContent=filtered().length+' nga '+S.list.length}});
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter')return;
