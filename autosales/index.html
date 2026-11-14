@@ -182,7 +182,19 @@ function calc(v){
 const LS='autosales.vehicles';
 function loadLocal(){try{S.vehicles=JSON.parse(localStorage.getItem(LS)||'[]')}catch(e){S.vehicles=[]}try{S.settings=Object.assign({default_pct:'',sellers:{}},JSON.parse(localStorage.getItem(LSS)||'{}'))}catch(e){}try{S.boa=JSON.parse(localStorage.getItem('autosales.boa')||'null')}catch(e){}}
 const queues={};
+/* Abonimi (vetëm kur programi rri në server): pas afatit kompania mbetet vetëm për lexim. */
+function subDays(){const e=S.sub&&S.sub.expires_on;if(!e)return null;const a=new Date(e+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);return Math.round((a-n)/864e5)}
+function subExpired(){const d=subDays();return d!==null&&d<0}
+const SUB_RO='Abonimi ka skaduar. Programi është vetëm për lexim.';
+function subBanner(){
+  const d=subDays();if(d===null||S.view==='login')return '';
+  if(d<0)return `<div class="card" style="border-color:var(--bad);color:var(--bad)"><b>Abonimi skadoi më ${dmy(S.sub.expires_on)}.</b>
+    <div class="small" style="color:var(--ink);margin-top:4px">Të dhënat mund t'i shohësh dhe t'i eksportosh, por nuk mund të shtosh, ndryshosh apo skanosh. Për ta rinovuar, kontakto TUFA Consult.</div></div>`;
+  if(d<=14&&S.view==='list')return `<div class="card small" style="border-color:var(--warn)"><b style="color:var(--warn)">${d===0?'Abonimi skadon sot.':'Abonimi skadon për '+d+' ditë'+(d===0?'':' (më '+dmy(S.sub.expires_on)+').')}</b> Për ta rinovuar, kontakto TUFA Consult.</div>`;
+  return '';
+}
 function save(v){
+  if(subExpired()){toast(SUB_RO);return}
   const i=S.vehicles.findIndex(x=>x.id===v.id);
   if(i>=0)S.vehicles[i]=v;else S.vehicles.push(v);
   if(S.db){
@@ -192,6 +204,7 @@ function save(v){
   }else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
 }
 function remove(id){
+  if(subExpired()){toast(SUB_RO);return}
   S.vehicles=S.vehicles.filter(x=>x.id!==id);
   if(S.db)S.db.doc('vehicles/'+id).delete().catch(()=>toast('Fshirja dështoi.'));
   else{try{localStorage.setItem(LS,JSON.stringify(S.vehicles))}catch(e){}}
@@ -215,6 +228,7 @@ function render(){
   else if(S.view==='contract')app.innerHTML=viewContract();
   else if(S.view==='company')app.innerHTML=viewCompany();
   else app.innerHTML=viewList();
+  const sb=subBanner();if(sb)app.insertAdjacentHTML('afterbegin',sb);
   app.classList.toggle('wide',S.view==='list'&&S.tab==='report');
   if(S.view==='form')updateFormSummary();
   if(S.view==='sell')updateSellOut();
@@ -579,6 +593,11 @@ function viewCompany(){
     <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="off"></div>
     <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="12" autocomplete="off" style="text-transform:uppercase"></div></div>
     <div class="row end"><button class="btn primary" data-act="coadd">Ruaj</button></div></div>`}
+  ${SB&&S.sub?`<div class="card"><h3>Abonimi</h3><div class="kv">
+    ${S.sub.plan?`<div><span>Plani</span><span>${esc(S.sub.plan)}</span></div>`:''}
+    ${S.sub.price!=null?`<div><span>Çmimi</span><span>${fmt(num(S.sub.price),0)} ${S.sub.currency==='ALL'?'L':S.sub.currency==='EUR'?'€':esc(S.sub.currency||'')}${/vjet/i.test(S.sub.plan||'')?' në vit':/muj/i.test(S.sub.plan||'')?' në muaj':''}</span></div>`:''}
+    <div><span>Vlen deri më</span><span ${subExpired()?'style="color:var(--bad)"':''}>${S.sub.expires_on?dmy(S.sub.expires_on):'pa afat'}</span></div></div>
+    <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto TUFA Consult.'}</div></div>`:''}
   ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
     ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
     <div class="grid2">
@@ -895,6 +914,7 @@ document.addEventListener('click',e=>{
   if(act==='tab'){S.tab=b.dataset.v}
   else if(act==='repmode'){S.rep.mode=b.dataset.v}
   else if(act==='xlsx'){exportReport();return}
+  else if(act==='new'&&subExpired()){toast(SUB_RO);return}
   else if(act==='new'){S.niptAck=null;S.draft=newDraft();S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
   else if(act==='open'){S.id=b.dataset.id;S.view='detail';S.confirmDel=false;S.confirmUnsell=false;scrollTo(0,0)}
   else if(act==='back'){S.view='list'}
@@ -1208,6 +1228,9 @@ async function startSupabase(){
   try{const u=await SB.auth.getSession();S.userMail=(u.data.session&&u.data.session.user&&u.data.session.user.email)||''}catch(e){}
   const {data:cid,error}=await SB.rpc('ensure_company');
   if(error||!cid){clearTimeout(timer);S.view='login';S.loginErr='Hyrja u krye, por kompania nuk u ngarkua. Provo përsëri.';render();return}
+  const loadSub=async()=>{try{const {data,error}=await SB.from('subscriptions').select('plan,price,currency,expires_on').eq('company_id',cid).maybeSingle();
+    if(!error){const was=JSON.stringify(S.sub||null);S.sub=data||null;if(was!==JSON.stringify(S.sub)&&(S.view==='list'||S.view==='company'))render()}}catch(e){}};
+  loadSub();setInterval(loadSub,15*60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadSub()});
   S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
   attachDb(supaDb(SB,cid),timer);
 }
