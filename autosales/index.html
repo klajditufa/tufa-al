@@ -239,6 +239,7 @@ function render(){
   else if(S.view==='sell')app.innerHTML=viewSell();
   else if(S.view==='contract')app.innerHTML=viewContract();
   else if(S.view==='company')app.innerHTML=viewCompany();
+  else if(S.view==='import')app.innerHTML=viewImport();
   else app.innerHTML=viewList();
   const sb=subBanner();if(sb)app.insertAdjacentHTML('afterbegin',sb);
   app.classList.toggle('wide',S.view==='list'&&S.tab==='report');
@@ -270,7 +271,7 @@ function listBody(){
   const base=all.filter(x=>S.tab==='stock'?!x.c.sold:x.c.sold),rows=found.filter(x=>S.tab==='stock'?!x.c.sold:x.c.sold);
   if(rows.length)return (q?`<div class="small muted">${rows.length} nga ${base.length} mjete</div>`:'')+`<div class="list">${rows.map(card).join('')}</div>`;
   if(q&&base.length)return `<div class="empty">Asnjë mjet nuk përputhet me “${esc(q)}”.</div>`;
-  return `<div class="empty">${S.tab==='stock'?'Asnjë mjet në stok. Shto blerjen e parë duke skanuar fletën doganore.':'Ende asnjë shitje.'}</div>`;
+  return `<div class="empty">${S.tab==='stock'?'Asnjë mjet në stok. Shto blerjen e parë duke skanuar fletën doganore.':'Ende asnjë shitje.'}</div>${S.tab==='stock'&&!q?'<div style="text-align:center"><button class="btn" data-act="import">Ke stok fillestar? Importo disa blerje njëherësh</button></div>':''}`;
 }
 function tiles(){
   const all=allCalc(),stock=all.filter(x=>!x.c.sold),yr=String(new Date().getFullYear()),soldY=all.filter(x=>x.c.sold&&String(x.v.sale.date||'').startsWith(yr)),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
@@ -606,6 +607,7 @@ function updateSellOut(){
 /* ---------- company data ---------- */
 /* Një llogari mund të ketë deri në 5 NIPT-e: kryesori (S.settings.company) dhe shtesat, të renditura te S.settings.nipts.
    Çdo mjet i përket njërit prej tyre: v.owner, përndryshe NIPT-i i importuesit nëse është i llogarisë, përndryshe kryesori. */
+S.imp={rows:[],busy:false,msg:''};
 const MAX_NIPTS=5,LSC='autosales.co';
 try{S.co=localStorage.getItem(LSC)||'all'}catch(e){S.co='all'}
 function ownKeys(){
@@ -671,6 +673,8 @@ function viewCompany(){
     ${own.length>1?`<div><span>NIPT-e</span><span>1 kryesor + ${own.length-1} shtesë</span></div>`:''}
     <div><span>Vlen deri më</span><span ${subExpired()?'style="color:var(--bad)"':''}>${S.sub.expires_on?dmy(S.sub.expires_on):'pa afat'}</span></div></div>
     <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto '+SUB_CONTACT+'.'}</div></div>`:''}
+  <div class="card"><h3>Stoku fillestar</h3><div class="small muted">Shto shumë blerje njëherësh: nga një shabllon Excel, ose duke zgjedhur disa PDF apo foto të fletëve doganore.</div>
+    <div class="row end" style="margin-top:10px"><button class="btn primary" data-act="import">Importo blerje</button></div></div>
   ${installHtml(true)}
   ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
     ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
@@ -949,6 +953,159 @@ function applyScan(r){
   }
 }
 
+
+/* ---------- Importi i blerjeve (stoku fillestar): nga Excel-i ose nga disa PDF / foto njëherësh ---------- */
+const IMP_COLS=[
+ ['make_model','Marka dhe modeli *','s',26],['year','Viti i prodhimit','n',10],['vin','Shasia (VIN) *','s',24],['plate','Targa','s',12],['color','Ngjyra','s',12],
+ ['engine_cc','Cilindrata (cc)','n',12],['fuel','Karburanti','s',12],['source','Lloji i blerjes','l',18,['Import','Brenda vendit']],
+ ['supplier','Shitësi / eksportuesi','s',26],['supplier_nipt','NIPT i shitësit','s',14],['supplier_country','Shteti','s',14],['importer_nipt','NIPT-i juaj (blerësi)','s',16],
+ ['invoice_no','Nr. i faturës','s',16],['invoice_date','Data e faturës','d',14],['decl_no','Nr. i deklaratës doganore','s',16],['decl_date','Data e deklaratës','d',14],['regime','Regjimi','l',10,['IM4','IM7']],
+ ['currency','Monedha','l',10,['EUR','USD','ALL','GBP','CHF']],['invoice_value','Vlera e faturës (në monedhë)','n',16],['rate','Kursi i këmbimit','n',10],['freight_all','Transporti (lekë)','n',14],
+ ['tax_base','Baza e taksës (lekë)','n',14],['duty','Taksa doganore (lekë)','n',14],['vat','TVSH (lekë)','n',14],['other_fees','Tarifa të tjera (lekë)','n',14],
+ ['vat_deductible','TVSH e zbritshme','l',12,['Po','Jo']],['expenses','Shpenzime të tjera (lekë)','n',14],['pct','Marzhi Fitimit (%)','n',12]];
+const IMP_MAX_SCAN=30,XLSX_MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const impKey=h=>plain(String(h||'')).replace(/[^a-z0-9]/g,'');
+async function saveFile(blob,file){
+  const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+  if(dl)await dl.save({filename:file,data:blob});
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file;document.body.appendChild(a);a.click();a.remove()}
+}
+async function impTemplate(){
+  if(S.imp.busy)return;S.imp.busy=true;S.imp.msg='Po përgatitet shablloni…';render();
+  try{
+    if(!window.ExcelJS)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+    const wb=new window.ExcelJS.Workbook();wb.creator='TUFA AutoSales ERP';
+    const ws=wb.addWorksheet('Blerjet',{views:[{state:'frozen',ySplit:1,xSplit:1}]});
+    ws.columns=IMP_COLS.map(c=>({header:c[1],key:c[0],width:c[3]}));
+    const co=mainCompany()||{};
+    ws.addRow({make_model:'SHEMBULL: VOLKSWAGEN GOLF 7',year:2017,vin:'WVWZZZAUZHW000001',color:'E bardhë',engine_cc:1968,fuel:'NAFTE',source:'Import',supplier:'AUTOHAUS BEISPIEL GMBH',supplier_country:'Gjermani',
+      importer_nipt:co.nipt||'',invoice_no:'INV-1001',invoice_date:new Date(Date.UTC(2026,9,1)),decl_no:'R 14021',decl_date:new Date(Date.UTC(2026,9,13)),regime:'IM4',currency:'EUR',invoice_value:7200,rate:98.4,
+      freight_all:61000,tax_base:769480,duty:0,vat:153896,other_fees:2100,vat_deductible:'Po',expenses:18000,pct:12});
+    const hr=ws.getRow(1);hr.height=34;
+    IMP_COLS.forEach((c,i)=>{
+      const h=hr.getCell(i+1);h.font={bold:true,color:{argb:'FFFFFFFF'}};h.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+      h.fill={type:'pattern',pattern:'solid',fgColor:{argb:/\*/.test(c[1])?'FF0B3A6B':'FF0B5C6B'}};
+      const col=ws.getColumn(i+1);if(c[2]==='d')col.numFmt='dd.mm.yyyy';if(c[2]==='n')col.numFmt=c[0]==='year'||c[0]==='engine_cc'?'0':'#,##0.##';
+      if(c[2]==='l')for(let r=2;r<=501;r++)ws.getCell(r,i+1).dataValidation={type:'list',allowBlank:true,formulae:['"'+c[4].join(',')+'"']};
+    });
+    ws.getRow(2).eachCell(c=>{c.font={italic:true,color:{argb:'FF8A97A0'}}});
+    const g=wb.addWorksheet('Udhëzime');g.getColumn(1).width=110;
+    ['Si plotësohet','','1. Çdo rresht është një mjet. Rreshti gri "SHEMBULL" nuk importohet; mund ta fshish.','2. Të detyrueshme janë vetëm Marka dhe modeli ose Shasia (VIN). Sa më shumë fusha, aq më e saktë kostoja.',
+     '3. Kostoja e mjetit = Vlera e faturës × Kursi + Transporti + Taksa doganore + Tarifa të tjera + Shpenzime të tjera. TVSH-ja hyn në kosto vetëm kur "TVSH e zbritshme" është Jo.',
+     '4. Shumat në lekë shkruhen pa pikë mijëshesh. Për monedhën ALL, kursi lihet bosh.','5. Datat shkruhen si DD.MM.VVVV (p.sh. 13.10.2026).',
+     '6. "Lloji i blerjes": Import (me fletë doganore) ose Brenda vendit (me faturë tatimore).','7. "NIPT-i juaj" duhet vetëm kur llogaria ka disa NIPT-e; mjeti shkon te kompania me atë NIPT.',
+     '8. Mos i ndrysho emrat e kolonave. Rendi i kolonave mund të ndryshojë dhe kolonat e panevojshme mund të lihen bosh.','9. Kur ta kesh plotësuar: Settings → Importo blerje → Ngarko Excel-in.']
+     .forEach((t,i)=>{const c=g.getCell(i+1,1);c.value=t;c.alignment={wrapText:true,vertical:'top'};if(!i)c.font={bold:true,size:14,color:{argb:'FF0B5C6B'}}});
+    await saveFile(new Blob([await wb.xlsx.writeBuffer()],{type:XLSX_MIME}),'AutoSales-Shablloni-i-blerjeve.xlsx');
+  }catch(e){if(!(e&&e.code==='declined'))toast('Shablloni nuk u krijua. Provo përsëri.');console.error(e)}
+  S.imp.busy=false;S.imp.msg='';render();
+}
+const impCell=v=>{if(v==null)return '';if(v instanceof Date)return v;if(typeof v==='object'){if(v.result!==undefined)return impCell(v.result);if(v.text!==undefined)return String(v.text);if(Array.isArray(v.richText))return v.richText.map(x=>x.text).join('');return ''}return v};
+const impDate=v=>{if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);const t=String(v||'').trim();if(/^\d{4}-\d{2}-\d{2}/.test(t))return t.slice(0,10);return parseDmy(t)||''};
+// Një rresht i lexuar (nga Excel-i ose nga skanimi) kthehet në mjet gati për t'u ruajtur, me paralajmërimet e veta.
+function impFinish(d,label){
+  const warn=[],ks=ownKeys();
+  d.vin=String(d.vin||'').toUpperCase().replace(/[^A-Z0-9]/g,'');d.make_model=String(d.make_model||'').trim();
+  let err='';
+  if(!d.make_model&&!d.vin)err='Mungon marka dhe shasia.';
+  else if(d.vin&&S.vehicles.some(x=>x.vin&&x.vin===d.vin))err='Kjo shasi është tashmë në program.';
+  else if(d.vin&&S.imp.rows.some(r=>!r.err&&r.d.vin===d.vin))err='Kjo shasi përsëritet në këtë import.';
+  if(!num(d.invoice_value))warn.push('pa vlerë blerjeje');
+  if(d.currency&&d.currency!=='ALL'&&!num(d.rate))warn.push('pa kurs');
+  if(d.regime==='IM7')warn.push('IM7, magazinë doganore');
+  const nm=niptMismatch(d);if(nm)warn.push('NIPT i huaj');
+  if(ks.length>1)d.owner=autoOwner(d);else delete d.owner;
+  const oc=ownerCompany(d)||{};if(!d.importer&&(!d.importer_nipt||String(d.importer_nipt).toUpperCase()===String(oc.nipt||'').toUpperCase())){d.importer=oc.name||'';if(!d.importer_nipt&&oc.nipt)d.importer_nipt=oc.nipt}
+  return {d,label,err,warn};
+}
+async function impExcel(file){
+  if(S.imp.busy||!file)return;S.imp.busy=true;S.imp.msg='Po lexohet Excel-i…';render();
+  try{
+    if(!window.ExcelJS)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+    const wb=new window.ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());
+    const ws=wb.getWorksheet('Blerjet')||wb.worksheets[0];if(!ws)throw new Error('sheet');
+    const map={};IMP_COLS.forEach(c=>map[impKey(c[1])]=c);
+    const cols={};ws.getRow(1).eachCell((c,i)=>{const m=map[impKey(impCell(c.value))];if(m)cols[i]=m});
+    if(!Object.values(cols).some(c=>c[0]==='make_model'||c[0]==='vin'))throw new Error('header');
+    let n=0;
+    ws.eachRow((row,ri)=>{
+      if(ri===1)return;const d=newDraft();d.id=d.id+ri;d.currency='';let any=false,exp=0,pct='';
+      for(const i in cols){const [k,,t]=cols[i];let v=impCell(row.getCell(+i).value);if(v===''||v==null)continue;any=true;
+        if(k==='expenses')exp=num(v);else if(k==='pct')pct=num(v);
+        else if(k==='source')d.source=/brenda|vend|local/i.test(String(v))?'local':'import';
+        else if(k==='vat_deductible')d.vat_deductible=!/^\s*(jo|no|0|false)/i.test(String(v));
+        else if(t==='d'){const x=impDate(v);if(x)d[k]=x}
+        else if(t==='n')d[k]=num(v);
+        else d[k]=String(v).trim()}
+      if(!any||/^shembull/i.test(String(d.make_model||'')))return;
+      d.currency=String(d.currency||'EUR').toUpperCase().slice(0,3);if(d.currency==='LEK'||d.currency==='L')d.currency='ALL';
+      if(d.source==='local')d.regime='';else if(!d.regime)d.regime='IM4';
+      for(const k of ['supplier_nipt','importer_nipt','plate','regime'])if(d[k])d[k]=String(d[k]).toUpperCase().replace(/[^A-Z0-9]/g,'');
+      if(exp>0)d.expenses=[{id:'e'+Math.random().toString(36).slice(2,9),date:today(),desc:'Shpenzime (stoku fillestar)',amount:exp}];
+      if(pct!=='')d.pricing={mode:'pct',value:pct};
+      S.imp.rows.push(impFinish(d,'Excel, rreshti '+ri));n++;
+    });
+    if(!n)toast('Excel-i nuk ka asnjë rresht me mjete.');
+  }catch(e){toast(e&&e.message==='header'?'Ky skedar nuk ka kolonat e shabllonit. Shkarko shabllonin dhe plotëso atë.':'Excel-i nuk u lexua. Ruaje si .xlsx dhe provo përsëri.');console.error(e)}
+  S.imp.busy=false;S.imp.msg='';render();
+}
+// Çdo skedar (PDF ose foto) është një dokument blerjeje dhe bëhet një mjet. Lexohen njëri pas tjetrit.
+async function impScan(fileList){
+  if(S.imp.busy||!S.sample)return;
+  let files=[...fileList];if(!files.length)return;
+  if(files.length>IMP_MAX_SCAN){toast('U morën '+IMP_MAX_SCAN+' skedarët e parë. Pjesën tjetër ngarkoje pas kësaj.');files=files.slice(0,IMP_MAX_SCAN)}
+  S.imp.busy=true;S.imp.stop=false;
+  for(let i=0;i<files.length&&!S.imp.stop;i++){
+    const f=files[i],label=f.name||('Skedari '+(i+1));S.imp.msg=`Po lexohet ${i+1} nga ${files.length}: ${label}`;render();
+    try{
+      const img=(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name||''))?await pdfFirstPage(f):f;
+      const imgs=await prepImages([img],(S.imgLimits&&S.imgLimits.maxCount)||1);
+      const r=await S.sample.json(PROMPT,{images:imgs,cache:false});
+      const keepD=S.draft,keepA=S.auto;S.draft=newDraft();S.draft.id+=i;S.auto=new Set();
+      applyScan(r&&typeof r==='object'?r:{});const d=S.draft,got=S.auto.size;S.draft=keepD;S.auto=keepA;
+      S.imp.rows.push(got?impFinish(d,label):{d,label,err:'Nuk u lexua asnjë fushë nga ky dokument.',warn:[]});
+    }catch(e){
+      S.imp.rows.push({d:newDraft(),label,err:SCAN_ERR[e&&e.code]||'Leximi dështoi.',warn:[]});
+      if(e&&['scan_disabled','no_key','forbidden','sampling_disabled','session_expired'].includes(e.code))break;
+    }
+  }
+  S.imp.busy=false;S.imp.msg='';S.imp.stop=false;render();
+}
+function impCommit(){
+  if(subExpired()){toast(SUB_RO);return}
+  const ok=S.imp.rows.filter(r=>!r.err);if(!ok.length)return;
+  ok.forEach(r=>save(JSON.parse(JSON.stringify(r.d))));
+  S.imp={rows:[],busy:false,msg:''};S.tab='stock';S.view='list';toast(ok.length+' mjete u shtuan në stok.');
+}
+function viewImport(){
+  const I=S.imp,ok=I.rows.filter(r=>!r.err),bad=I.rows.length-ok.length,canScan=!!(S.sample&&S.imgLimits);
+  const total=ok.reduce((t,r)=>t+calc(r.d).cost,0);
+  return `<div class="top"><h1>Importo blerje</h1><button class="btn ghost" data-act="impback">‹ Mbyll</button></div>
+  <div class="small muted">Për të regjistruar stokun fillestar ose shumë blerje njëherësh. Asgjë nuk ruhet derisa të shtypësh “Shto në stok”.</div>
+  <div class="card"><h3>Nga Excel-i</h3>
+    <div class="small muted" style="margin-bottom:10px">Shkarko shabllonin, plotëso një rresht për çdo mjet dhe ngarkoje këtu.</div>
+    <div class="row"><button class="btn" data-act="imptpl" ${I.busy?'disabled':''}>Shkarko shabllonin</button>
+      <button class="btn primary" data-act="impxls" ${I.busy?'disabled':''}>Ngarko Excel-in</button>
+      <input id="impxlsfile" type="file" accept=".xlsx,${XLSX_MIME}" hidden></div></div>
+  <div class="card"><h3>Nga PDF ose foto</h3>
+    <div class="small muted" style="margin-bottom:10px">Zgjidh disa fleta doganore ose fatura njëherësh, një skedar për çdo mjet. Programi i lexon njërën pas tjetrës. Deri në ${IMP_MAX_SCAN} skedarë për herë.</div>
+    ${canScan?`<div class="row"><button class="btn primary" data-act="impscan" ${I.busy?'disabled':''}>Zgjidh PDF ose foto</button>
+      <input id="impscanfile" type="file" accept="${esc((S.imgLimits.mediaTypes||['image/*']).concat('application/pdf').join(','))}" multiple hidden></div>`
+      :'<div class="small muted">Leximi i dokumenteve nuk është i disponueshëm në këtë pamje.</div>'}</div>
+  ${I.busy?`<div class="card small"><b>${esc(I.msg||'Po punohet…')}</b>${/Po lexohet \d/.test(I.msg||'')?`<div class="row end" style="margin-top:8px"><button class="btn" data-act="impstop">Ndalo pas këtij</button></div>`:''}</div>`:''}
+  ${I.rows.length?`<div class="card"><h3>Për t'u shtuar: ${ok.length} mjete${bad?' · '+bad+' me gabim':''}</h3>
+    <div class="list">${I.rows.map((r,i)=>{const c=calc(r.d);return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0"><b style="overflow-wrap:anywhere">${esc(r.d.make_model||'(pa emër)')} ${esc(r.d.year||'')}</b>
+        <div class="mono muted" style="overflow-wrap:anywhere">${esc(r.d.vin||'pa VIN')}</div>
+        <div class="small muted" style="overflow-wrap:anywhere">${esc(r.label)}${ownKeys().length>1&&!r.err?' · '+esc(shortCo(ownerCompany(r.d)||{})):''}</div>
+        ${r.err?`<div class="small" style="color:var(--bad)">${esc(r.err)} Nuk do të shtohet.</div>`:r.warn.length?`<div class="small" style="color:var(--warn)">Kontrollo: ${esc(r.warn.join(', '))}</div>`:''}</div>
+      <div style="text-align:right;flex:none"><b>${r.err?'—':lek(c.cost)}</b><div class="small muted">kosto</div>
+        <button class="btn ghost" data-act="imprm" data-i="${i}" style="padding:4px 8px;font-size:12.5px;margin-top:4px">Hiq</button></div></div>`}).join('')}</div>
+    <div class="kv" style="margin-top:10px"><div class="total"><span>Kosto gjithsej</span><span>${lek(total)}</span></div></div>
+    <div class="small muted">Pas shtimit, çdo mjet hapet dhe ndryshohet si çdo blerje tjetër.</div>
+    <div class="row end"><button class="btn" data-act="impclear" ${I.busy?'disabled':''}>Zbraz listën</button><button class="btn primary" data-act="impcommit" ${I.busy||!ok.length?'disabled':''}>Shto në stok ${ok.length?'('+ok.length+')':''}</button></div></div>`:''}`;
+}
+
 /* ---------- city suggestions ---------- */
 const plain=s=>String(s||'').toLowerCase().replace(/ë/g,'e').replace(/ç/g,'c');
 let cityOpts=[],cityIdx=-1;
@@ -998,6 +1155,15 @@ document.addEventListener('click',e=>{
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='install'){doInstall();return}
+  if(act==='import'){if(subExpired()){toast(SUB_RO);return}S.view='import';scrollTo(0,0);render();return}
+  if(act==='impback'){if(S.imp.busy)S.imp.stop=true;S.view='list';render();return}
+  if(act==='imptpl'){impTemplate();return}
+  if(act==='impxls'){const f=$('#impxlsfile');if(f){f.value='';f.click()}return}
+  if(act==='impscan'){const f=$('#impscanfile');if(f){f.value='';f.click()}return}
+  if(act==='impstop'){S.imp.stop=true;b.disabled=true;b.textContent='Po ndalet…';return}
+  if(act==='imprm'){S.imp.rows.splice(+b.dataset.i,1);render();return}
+  if(act==='impclear'){S.imp.rows=[];render();return}
+  if(act==='impcommit'){impCommit();render();return}
   if(act==='spay'&&S.sale){S.sale.pay=b.dataset.v;document.querySelectorAll('[data-act=spay]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===S.sale.pay)));return}
   if(act==='fiscon'){
     const k=b.dataset.v,g=id=>document.getElementById(id+k),token=g('fi-tok-').value.trim(),provider=g('fi-prov-').value,operator_code=g('fi-op-').value.trim();
@@ -1178,6 +1344,8 @@ document.addEventListener('change',e=>{
   if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
   if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
   if(t.id==='scanfile'){const f=t.files;if(f&&f.length)runScan(f);return}
+  if(t.id==='impxlsfile'){if(t.files&&t.files[0])impExcel(t.files[0]);return}
+  if(t.id==='impscanfile'){if(t.files&&t.files.length)impScan(t.files);return}
   if(t.dataset.p&&S.view==='detail'){
     const v=S.vehicles.find(x=>x.id===S.id);
     if(v){readPricing(v);save(v);const sp=$('#s-price');if(sp){const c=calc(v);sp.value=c.markup?Math.round(c.price):''}}
