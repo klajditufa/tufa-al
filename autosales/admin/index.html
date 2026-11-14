@@ -129,10 +129,11 @@ function filtered(){
   return S.list.filter(c=>{
     if(S.filter!=='all'&&status(c).k!==S.filter)return false;
     if(!q)return true;
-    return [c.name,c.nipt,c.phone,(c.sub&&c.sub.plan)||'',(c.sub&&c.sub.note)||''].concat(c.users.map(u=>u.email)).join(' ').toLowerCase().includes(q);
+    return [c.name,c.nipt,c.phone,(c.sub&&c.sub.plan)||'',(c.sub&&c.sub.note)||''].concat(c.users.map(u=>u.email),nipts(c).map(n=>n.nipt+' '+n.name)).join(' ').toLowerCase().includes(q);
   });
 }
 const paid=c=>{const t={};c.payments.forEach(p=>{t[p.currency]=(t[p.currency]||0)+Number(p.amount||0)});return Object.keys(t).sort().map(k=>money(t[k],k)).join(' · ')||'—'};
+const nipts=c=>(c.nipts&&c.nipts.length?c.nipts:[{nipt:c.nipt,name:c.name}]);
 const lastLogin=c=>{const a=c.users.map(u=>u.last_sign_in_at).filter(Boolean).sort();return a.length?a[a.length-1]:null};
 
 function render(){
@@ -174,7 +175,7 @@ function listHtml(rows){
   return `<div class="tablewrap"><table><thead><tr><th>Nr.</th><th>Kompania</th><th>Përdoruesit</th><th>Regjistruar</th><th>Hyrja e fundit</th><th class="num">Mjete</th><th>Plani</th><th class="num">Çmimi</th><th>Afati</th><th>Gjendja</th><th>Skanimi</th><th class="num">Paguar</th></tr></thead><tbody>
     ${rows.map((c,i)=>{const s=status(c),b=c.sub||{};return `<tr class="co" data-act="open" data-id="${esc(c.id)}" tabindex="0">
       <td class="muted">${i+1}</td>
-      <td><div class="name">${esc(c.name||'(pa emër)')}</div><div class="mono muted">${esc(c.nipt||'—')}</div></td>
+      <td><div class="name">${esc(c.name||'(pa emër)')}</div><div class="mono muted">${esc(c.nipt||'—')}${nipts(c).length>1?` <span class="chip none" style="font-family:var(--body)">+${nipts(c).length-1} NIPT</span>`:''}</div></td>
       <td class="small">${c.users.map(u=>esc(u.email)).join('<br>')||'<span class="muted">—</span>'}</td>
       <td class="small">${dmyT(c.created_at)}</td><td class="small">${dmyT(lastLogin(c))}</td>
       <td class="num">${c.vehicles}<span class="muted small"> / ${c.sold} shitur</span></td>
@@ -193,6 +194,9 @@ function dialogHtml(c){
   return `<div class="dlg">
     <div class="top"><div><h2>${esc(c.name||'(pa emër)')}</h2><div class="mono muted">${esc(c.nipt||'—')}${c.phone?' · '+esc(c.phone):''}</div></div>
       <div class="row"><span class="chip ${s.cls}">${s.label}</span><button class="btn sm" data-act="close">Mbyll</button></div></div>
+    ${nipts(c).length>1?`<div class="card"><h3>NIPT-et e llogarisë (${nipts(c).length})</h3>
+      <div class="small">${nipts(c).map((n,i)=>`<span class="mono">${esc(n.nipt)}</span> ${esc(n.name)} <span class="muted">· ${i?'shtesë, 6 000 L':'kryesor, 12 000 L'}</span>`).join('<br>')}</div>
+      <div class="small muted" style="margin-top:6px">Çmimi vjetor sipas rregullit: ${money(12000+6000*(nipts(c).length-1),'ALL')}</div></div>`:''}
     <div class="card"><h3>Llogaria</h3>
       <div class="small">${c.users.map(u=>`${esc(u.email)} <span class="muted">· hyrja e fundit ${dmyT(u.last_sign_in_at)}</span>`).join('<br>')||'<span class="muted">Asnjë përdorues</span>'}</div>
       <div class="small muted" style="margin-top:6px">Regjistruar ${dmyT(c.created_at)} · ${c.vehicles} mjete, ${c.sold} të shitura · veprimi i fundit ${dmyT(c.last_activity)}</div></div>
