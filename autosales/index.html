@@ -849,6 +849,8 @@ document.addEventListener('click',e=>{
   if(act==='login'){doLogin();return}
   if(act==='signup'){doSignup();return}
   if(act==='resend'){doResend();return}
+  if(act==='forgot'){doForgot();return}
+  if(act==='newpass'){doNewPass();return}
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='company'){S.view='company';scrollTo(0,0)}
@@ -1003,6 +1005,24 @@ document.addEventListener('keydown',e=>{
 /* ---------- Supabase (kur programi rri në hostin e vet) ---------- */
 let SB=null;
 function viewLogin(){
+  if(S.loginMode==='newpass')return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
+    <div class="brand"><h1>AutoSales ERP</h1><span>Vendos fjalëkalimin e ri</span></div>
+    <div class="card">
+      <div class="field"><label for="l-pass">Fjalëkalimi i ri</label><input id="l-pass" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>
+      ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
+      <button class="btn primary" data-act="newpass" ${S.loginBusy?'disabled':''}>${S.loginBusy?'Po ruhet…':'Ruaj dhe hyr'}</button></div></div>`;
+  if(S.loginMode==='forgot'){
+    const lk='background:none;border:0;padding:6px;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
+    return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
+    <div class="brand"><h1>AutoSales ERP</h1><span>Rivendos fjalëkalimin</span></div>
+    <div class="card">
+      ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`
+      :`<div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
+      ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
+      <button class="btn primary" data-act="forgot" ${S.loginBusy?'disabled':''}>${S.loginBusy?'Po dërgohet…':'Dërgo linkun'}</button>`}</div>
+    <div style="text-align:center"><button style="${lk}" data-act="login-mode" data-mode="login">Kthehu te hyrja</button></div></div>`;
+  }
   const up=S.loginMode==='signup';
   const link='background:none;border:0;padding:6px;color:var(--accent,#0b5c6b);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline';
   return `<div style="max-width:380px;margin:8vh auto 0;display:flex;flex-direction:column;gap:14px;width:100%">
@@ -1020,6 +1040,7 @@ function viewLogin(){
       ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
       ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`:''}
       <button class="btn primary" data-act="${up?'signup':'login'}" ${S.loginBusy?'disabled':''}>${up?(S.loginBusy?'Po krijohet…':'Krijo llogari'):(S.loginBusy?'Po hyn…':'Hyr')}</button></div>
+      ${up?'':`<div style="text-align:center"><button style="${link}" class="small" data-act="login-mode" data-mode="forgot">Harrova fjalëkalimin</button></div>`}
       <div style="text-align:center" class="small">${up?'Ke llogari?':'Nuk ke llogari?'} <button style="${link}" data-act="login-mode" data-mode="${up?'login':'signup'}">${up?'Hyr':'Krijo llogari'}</button></div>`}
     </div>`;
 }
@@ -1061,6 +1082,28 @@ async function doSignup(){
   if(data&&data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length){S.loginMode='login';S.loginErr='';S.loginMsg='Ky email ka tashmë llogari. Hyr me fjalëkalimin tënd.';render();return}
   // Supabase nuk tregon nëse emaili ekziston: përdoruesi sheh të njëjtin mesazh në të dyja rastet.
   S.loginSent=email;render();
+}
+async function doForgot(){
+  if(!SB||S.loginBusy)return;
+  const email=$('#l-mail').value.trim();S.loginMail=email;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){S.loginErr='Shkruaj një email të saktë.';render();return}
+  S.loginBusy=true;S.loginErr='';render();
+  const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:authRedirect()});
+  S.loginBusy=false;
+  if(error){S.loginErr=/rate|too many|seconds/i.test(error.message||'')?'U dërguan shumë emaile. Prit pak minuta dhe provo përsëri.':'Emaili nuk u dërgua. Provo përsëri.';render();return}
+  S.loginMsg='Nëse ky email ka llogari, i dërguam një link për të vendosur fjalëkalim të ri. Shiko edhe te Spam.';render();
+}
+async function doNewPass(){
+  if(!SB||S.loginBusy)return;
+  const password=$('#l-pass').value,p2=$('#l-pass2').value;
+  const fail=m=>{S.loginErr=m;render()};
+  if(password.length<8)return fail('Fjalëkalimi duhet të ketë të paktën 8 shkronja ose numra.');
+  if(password!==p2)return fail('Fjalëkalimet nuk përputhen.');
+  S.loginBusy=true;S.loginErr='';render();
+  const {error}=await SB.auth.updateUser({password});
+  S.loginBusy=false;
+  if(error)return fail(/different|same/i.test(error.message||'')?'Zgjidh një fjalëkalim të ndryshëm nga i vjetri.':/session|jwt|auth/i.test(error.message||'')?'Linku ka skaduar. Kërko një link të ri te “Harrova fjalëkalimin”.':'Fjalëkalimi nuk u ruajt. Provo përsëri.');
+  S.loginMode='login';startSupabase();
 }
 async function doResend(){
   if(!SB||S.loginBusy||!S.loginSent)return;
@@ -1119,9 +1162,11 @@ async function bootSupabase(cfg){
     if(!window.supabase)await loadScript(cfg.sdk||'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
     SB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
     const badLink=/error(_code|_description)?=/.test(location.hash+location.search);
+    const recovery=/type=recovery/.test(location.hash+location.search);
     const {data}=await SB.auth.getSession();
     if(location.hash.includes('access_token')||badLink||/[?&]code=/.test(location.search))history.replaceState(null,'',location.pathname);
     if(!data.session){S.view='login';if(badLink)S.loginErr='Linku i konfirmimit ka skaduar ose është përdorur. Hyr, ose kërko një link të ri.';render();return}
+    if(recovery){S.view='login';S.loginMode='newpass';render();return}
   }catch(e){S.view='login';S.loginErr='Nuk u lidh dot me serverin. Kontrollo internetin dhe rifresko faqen.';render();return}
   startSupabase();
 }
@@ -1170,7 +1215,7 @@ async function boot(){
   }else{clearTimeout(timer);S.loaded=true;loadLocal();if(S.view==='list')render()}
 }
 boot();
-document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(e.target.id==='l-pass2')doSignup();else if(e.target.id==='l-pass'&&S.loginMode!=='signup')doLogin()});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(e.target.id==='l-pass2'){S.loginMode==='newpass'?doNewPass():doSignup()}else if(e.target.id==='l-mail'&&S.loginMode==='forgot')doForgot();else if(e.target.id==='l-pass'&&S.loginMode!=='signup'&&S.loginMode!=='newpass')doLogin()});
 if('serviceWorker' in navigator&&!(window.claude&&window.claude.use)&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
