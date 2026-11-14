@@ -68,6 +68,10 @@ h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;c
 .car .amt{font:700 16px var(--display);text-align:right;font-variant-numeric:tabular-nums}
 .car .sub{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .car .sub.r{text-align:right}
+.cosel{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.cosel::-webkit-scrollbar{display:none}
+.cosel button{appearance:none;flex:none;font:600 13px var(--body);padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cosel button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .pill{display:inline-block;font:600 11.5px var(--body);padding:2px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
 .pill.stock{color:var(--warn)} .pill.sold{color:var(--good)} .pill.bad{color:var(--bad)} .pill.ok{color:var(--good)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
@@ -219,7 +223,7 @@ function remove(id){
 }
 const LSS='autosales.settings';
 function saveSettings(){
-  const data={default_pct:S.settings.default_pct===''?'':num(S.settings.default_pct),eur_rate:num(S.settings.eur_rate)||'',company:S.settings.company||'',sellers:JSON.parse(JSON.stringify(S.settings.sellers||{}))};
+  const data={default_pct:S.settings.default_pct===''?'':num(S.settings.default_pct),eur_rate:num(S.settings.eur_rate)||'',company:S.settings.company||'',nipts:ownKeys(),sellers:JSON.parse(JSON.stringify(S.settings.sellers||{}))};
   if(S.db)S.db.doc('settings/main').set(data).catch(()=>toast('Ruajtja e Marzhit të Fitimit dështoi.'));
   else{try{localStorage.setItem(LSS,JSON.stringify(data))}catch(e){}}
 }
@@ -244,10 +248,13 @@ function render(){
 }
 
 function header(){
-  const co=mainCompany()||{},sub=[co.nipt?'NIPT '+co.nipt:'',co.address].filter(Boolean).join(' · ');
+  const own=ownCompanies(),sk=scopeKey(),multi=own.length>1;
+  const co=(multi?(sk==='all'?{name:'Të gjitha kompanitë'}:own.find(c=>c.key===sk)):own[0])||{};
+  const sub=multi&&sk==='all'?own.length+' NIPT-e në këtë llogari':[co.nipt?'NIPT '+co.nipt:'',co.address].filter(Boolean).join(' · ');
+  const chips=multi?`<div class="cosel" role="group" aria-label="Kompania">${[{key:'all',name:'Të gjitha'}].concat(own).map(c=>`<button data-act="co" data-v="${esc(c.key)}" aria-pressed="${sk===c.key}" title="${esc(c.name||'')}${c.nipt?' · '+esc(c.nipt):''}">${esc(c.key==='all'?c.name:shortCo(c))}</button>`).join('')}</div>`:'';
   return `<div class="top" style="flex-wrap:nowrap"><div class="brand" style="min-width:0"><h1 style="overflow-wrap:anywhere">${esc(co.name||'AutoSales ERP')}</h1><span>${esc(sub||'Import dhe shitje automjetesh')}</span></div>
     <button class="btn ghost" data-act="company" aria-label="Settings" title="Settings" style="padding:6px;border:0;color:var(--muted);flex:none;align-self:flex-start">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div>`;
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div>`+chips;
 }
 
 function match(v){
@@ -255,7 +262,7 @@ function match(v){
   const hay=[v.make_model,v.year,v.vin,v.plate,v.supplier,v.color,v.decl_no,v.invoice_no,v.sale&&v.sale.buyer].join(' ').toLowerCase();
   return q.split(/\s+/).every(w=>hay.includes(w));
 }
-function allCalc(){return S.vehicles.map(v=>({v,c:calc(v)})).sort((a,b)=>String(b.v.created||'').localeCompare(String(a.v.created||'')))}
+function allCalc(){return S.vehicles.filter(inScope).map(v=>({v,c:calc(v)})).sort((a,b)=>String(b.v.created||'').localeCompare(String(a.v.created||'')))}
 function listBody(){
   if(!S.loaded)return `<div class="empty">${S.slow?'Të dhënat nuk po arrihen ende. Faqja vazhdon të provojë.':'Po ngarkohet…'}</div>`;
   const all=allCalc(),found=all.filter(x=>match(x.v)),q=S.q.trim();
@@ -351,6 +358,12 @@ function viewReport(all,total){
 }
 
 function reportExportData(){
+  const d=reportExportData0(),multi=ownKeys().length>1,sk=scopeKey();
+  if(!(multi&&sk==='all')){d.cols.splice(1,1);d.rows.forEach(r=>r.splice(1,1));if(multi){const c=ownCompanies().find(x=>x.key===sk);if(c)d.sub=(c.name||c.nipt)+' · NIPT '+c.nipt+' · '+d.sub}}
+  return d;
+}
+function reportExportData0(){
+  const CO=v=>{const c=ownerCompany(v)||{};return c.name||c.nipt||''};
   const all=allCalc().filter(x=>match(x.v)),r=S.rep,mode=r.mode||(S.vehicles.some(v=>v.status==='sold')?'sales':'purch');
   const period=r.year?(r.month?MONTHS[+r.month-1]+' ':'')+r.year:'Të gjitha periudhat';
   const D=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):''};
@@ -359,19 +372,19 @@ function reportExportData(){
   if(mode==='stock'){
     const st=all.filter(x=>!x.c.sold).sort(by(x=>buyDate(x.v)));
     return {file:'Raporti-Ne-stok-'+today(),sheet:'Në stok',title:'Mjetet në stok',sub:'Gjendja më '+dmy(today())+q,
-      cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',14],['Ditë në stok','q',11],['Kosto','n',14],['Marzhi Fitimit','n',15],['Çmimi pa TVSH','n',15],['Çmimi me TVSH','n',15]],
-      rows:st.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),buyDate(v)?Math.max(0,R((new Date(today())-new Date(buyDate(v)))/864e5)):'',R(c.cost),R(c.markup),c.markup?R(c.price):0,c.markup?R(c.priceVat):0])};
+      cols:[['Nr.','i',10],['Kompania','s',24],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',14],['Ditë në stok','q',11],['Kosto','n',14],['Marzhi Fitimit','n',15],['Çmimi pa TVSH','n',15],['Çmimi me TVSH','n',15]],
+      rows:st.map(({v,c})=>[0,CO(v),name(v),v.vin||'',D(buyDate(v)),buyDate(v)?Math.max(0,R((new Date(today())-new Date(buyDate(v)))/864e5)):'',R(c.cost),R(c.markup),c.markup?R(c.price):0,c.markup?R(c.priceVat):0])};
   }
   if(mode==='sales'){
     const sl=all.filter(x=>x.c.sold&&inPeriod(x.v.sale.date)).sort(by(x=>x.v.sale.date));
     return {file:'Raporti-Shitjet-'+(r.year?r.year+(r.month?'-'+r.month:''):'te-gjitha'),sheet:'Shitjet',title:'Shitjet e mjeteve',sub:period+q+made,
-      cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e shitjes','d',14],['Blerësi','s',24],['Qyteti','s',14],['Kosto','n',14],['Shitja pa TVSH','n',15],['TVSH 20%','n',13],['Shitja me TVSH','n',15],['Fitimi','n',13]],
-      rows:sl.map(({v,c})=>[0,name(v),v.vin||'',D(v.sale.date),v.sale.buyer||'',v.sale.city||'',R(c.cost),R(c.salePrice),R(c.salePrice*VAT_SALE),R(c.salePrice*(1+VAT_SALE)),R(c.profit)])};
+      cols:[['Nr.','i',10],['Kompania','s',24],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e shitjes','d',14],['Blerësi','s',24],['Qyteti','s',14],['Kosto','n',14],['Shitja pa TVSH','n',15],['TVSH 20%','n',13],['Shitja me TVSH','n',15],['Fitimi','n',13]],
+      rows:sl.map(({v,c})=>[0,CO(v),name(v),v.vin||'',D(v.sale.date),v.sale.buyer||'',v.sale.city||'',R(c.cost),R(c.salePrice),R(c.salePrice*VAT_SALE),R(c.salePrice*(1+VAT_SALE)),R(c.profit)])};
   }
   const bo=all.filter(x=>inPeriod(buyDate(x.v))).sort(by(x=>buyDate(x.v)));
   return {file:'Raporti-Blerjet-'+(r.year?r.year+(r.month?'-'+r.month:''):'te-gjitha'),sheet:'Blerjet',title:'Blerjet e mjeteve',sub:period+q+made,
-    cols:[['Nr.','i',10],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',15],['Nr. i deklaratës / faturës','s',17],['Baza e taksës','n',14],['TVSH','n',13],['Totali (baza + TVSH)','n',16],['Regjimi','s',14],['Shitësi','s',28],['Blerja','n',13],['Transporti','n',13],['Tarifa e skanimit (kosto)','n',16],['Shpenzime','n',12],['Kosto','n',14],['Gjendja','s',10]],
-    rows:bo.map(({v,c})=>[0,name(v),v.vin||'',D(buyDate(v)),v.source==='local'?(v.invoice_no?'Faturë '+v.invoice_no:''):(v.decl_no||''),R(c.taxBase),R(c.vat),R(c.taxBase+c.vat),v.source==='local'?'Brenda vendit':(v.regime||''),v.supplier||'',R(c.purchase),R(c.freight),R(c.customsCost),R(c.exp),R(c.cost),c.sold?'shitur':'në stok'])};
+    cols:[['Nr.','i',10],['Kompania','s',24],['Mjeti','s',26],['Shasia (VIN)','s',22],['Data e blerjes','d',15],['Nr. i deklaratës / faturës','s',17],['Baza e taksës','n',14],['TVSH','n',13],['Totali (baza + TVSH)','n',16],['Regjimi','s',14],['Shitësi','s',28],['Blerja','n',13],['Transporti','n',13],['Tarifa e skanimit (kosto)','n',16],['Shpenzime','n',12],['Kosto','n',14],['Gjendja','s',10]],
+    rows:bo.map(({v,c})=>[0,CO(v),name(v),v.vin||'',D(buyDate(v)),v.source==='local'?(v.invoice_no?'Faturë '+v.invoice_no:''):(v.decl_no||''),R(c.taxBase),R(c.vat),R(c.taxBase+c.vat),v.source==='local'?'Brenda vendit':(v.regime||''),v.supplier||'',R(c.purchase),R(c.freight),R(c.customsCost),R(c.exp),R(c.cost),c.sold?'shitur':'në stok'])};
 }
 let xlsBusy=false;
 async function exportReport(){
@@ -440,14 +453,18 @@ function viewForm(){
   const shown=f=>f.filter(x=>local?!HIDE_LOCAL.includes(x[0]):!HIDE_IMPORT.includes(x[0])||d[x[0]]);
   return `<div class="top"><h1>${isNew?'Blerje e re':'Ndrysho blerjen'}</h1><button class="btn ghost" data-act="cancel">Anulo</button></div>
   ${scan}
+  ${ownKeys().length>1?`<div class="card"><div class="field"><label for="f-owner">Kompania që e blen (NIPT-i juaj)</label><select id="f-owner" data-f="owner">${ownCompanies().map(c=>`<option value="${esc(c.key)}"${(S.ownerTouched?d.owner:autoOwner(d))===c.key?' selected':''}>${esc(c.name||c.nipt)} · ${esc(c.nipt)}</option>`).join('')}</select></div>
+    <div class="small muted">Zgjidhet vetë sipas NIPT-it të fletës doganore. Ndryshoje vetëm nëse mjeti i përket një kompanie tjetër tuajës.</div></div>`:''}
   ${GROUPS.map(([t,f])=>`<div class="card"><h3>${t==='Dogana'&&local?'TVSH e blerjes':t}</h3><div class="grid2">${shown(f).map(inp).join('')}</div>
     ${t==='Dogana'?`<label class="check"><input type="checkbox" id="f-vatded" data-f="vat_deductible" ${d.vat_deductible!==false?'checked':''}><span>TVSH-ja e ${local?'blerjes':'importit'} është e zbritshme (nuk hyn në koston e mjetit)</span></label>`:''}</div>`).join('')}
   <div class="card" id="fsum"></div>
   <div class="row end"><button class="btn" data-act="cancel">Anulo</button><button class="btn primary" data-act="savedraft">Ruaj blerjen</button></div>`;
 }
 function niptMismatch(d){
-  const n=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''),co=mainCompany(),a=n(d&&d.importer_nipt),b=n(co&&co.nipt);
-  return a&&b&&a!==b?`NIPT-i ${a}${d.importer?' ('+d.importer+')':''} nuk i përket kompanisë suaj, ${co.name||''} ${b}.`:'';
+  const n=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''),own=ownCompanies(),co=own[0],a=n(d&&d.importer_nipt),mine=own.map(c=>n(c.nipt)).filter(Boolean);
+  if(!a||!mine.length||mine.includes(a))return '';
+  const who=`NIPT-i ${a}${d.importer?' ('+d.importer+')':''}`;
+  return mine.length>1?`${who} nuk është asnjë nga NIPT-et e llogarisë suaj.`:`${who} nuk i përket kompanisë suaj, ${co.name||''} ${mine[0]}.`;
 }
 function updateFormSummary(){
   const el=$('#fsum');if(!el)return;const d=S.draft,c=calc(d);
@@ -584,13 +601,32 @@ function updateSellOut(){
 }
 
 /* ---------- company data ---------- */
+/* Një llogari mund të ketë deri në 5 NIPT-e: kryesori (S.settings.company) dhe shtesat, të renditura te S.settings.nipts.
+   Çdo mjet i përket njërit prej tyre: v.owner, përndryshe NIPT-i i importuesit nëse është i llogarisë, përndryshe kryesori. */
+const MAX_NIPTS=5,LSC='autosales.co';
+try{S.co=localStorage.getItem(LSC)||'all'}catch(e){S.co='all'}
+function ownKeys(){
+  const sel=S.settings.sellers||{},main=S.settings.company;
+  let a=Array.isArray(S.settings.nipts)?S.settings.nipts.filter((k,i,x)=>sel[k]&&x.indexOf(k)===i):[];
+  if(main&&sel[main])a=[main].concat(a.filter(k=>k!==main));
+  if(!a.length){const all=companies(),m=all.find(x=>x.key===main)||all[0];if(m)a=[m.key]}
+  return a.slice(0,MAX_NIPTS);
+}
+function ownCompanies(){const all=companies();return ownKeys().map(k=>all.find(c=>c.key===k)).filter(Boolean)}
+function ownerKey(v){const ks=ownKeys();if(v.owner&&ks.includes(v.owner))return v.owner;const k=v.importer_nipt?sellerKey(v):'';return ks.includes(k)?k:ks[0]}
+function scopeKey(){const ks=ownKeys();return ks.length>1&&ks.includes(S.co)?S.co:'all'}
+function inScope(v){const k=scopeKey();return k==='all'||ownerKey(v)===k}
+function ownerCompany(v){const k=ownerKey(v);return ownCompanies().find(c=>c.key===k)||mainCompany()}
+// Te blerja: NIPT-i i fletës doganore vendos kompaninë; përndryshe ajo që është zgjedhur në faqen kryesore.
+function autoOwner(d){const ks=ownKeys(),k=d.importer_nipt?sellerKey(d):'';if(ks.includes(k))return k;if(d.owner&&ks.includes(d.owner))return d.owner;const sc=scopeKey();return sc==='all'?ks[0]:sc}
+const shortCo=c=>String(c.name||c.nipt||'').replace(/\b(SH\.?P\.?K\.?|SH\.?A\.?)\b/gi,'').replace(/\s+/g,' ').trim()||c.nipt;
 function companies(){
   const m={},sel=S.settings.sellers||{};
   for(const v of S.vehicles)if(v.importer_nipt||v.importer){const k=sellerKey(v);m[k]=m[k]||{key:k,name:v.importer||'',nipt:v.importer_nipt||''}}
   for(const k in sel)m[k]=Object.assign(m[k]||{key:k,name:'',nipt:k},{});
   return Object.values(m).map(c=>{const s=sel[c.key]||{};return {key:c.key,name:s.name||c.name,nipt:s.nipt||c.nipt,address:s.address||'',phone:s.phone||'',email:s.email||'',slogan:s.slogan===undefined?'Import dhe shitje automjetesh':s.slogan}});
 }
-function mainCompany(){const all=companies();return all.find(x=>x.key===S.settings.company)||all[0]}
+function mainCompany(){return ownCompanies()[0]}
 function viewCompany(){
   const c=mainCompany();
   if(S.onboard&&!c)return `<div class="top"><h1>Mirë se erdhe</h1><span class="row"><button class="btn ghost" data-act="logout">Dil</button></span></div>
@@ -601,10 +637,24 @@ function viewCompany(){
     <div class="field wide"><label for="co-new-address">Adresa</label><input id="co-new-address" type="text" autocomplete="street-address" placeholder="Rruga, qyteti"></div>
     <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="(+355) 6X XXX XXXX"></div></div>
     <div class="row end"><button class="btn primary" data-act="coadd">Ruaj dhe vazhdo</button></div></div>`;
-  const f=(k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${k}">${label}</label><input id="co-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
+  const own=ownCompanies(),price=n=>fmt(n,0)+' L';
+  const f=(c,k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${esc(c.key)}-${k}">${label}</label><input id="co-${esc(c.key)}-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
+  const coCard=(c,i)=>`<div class="card">${own.length>1||i?`<h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${i?'NIPT shtesë '+i:'Kompania kryesore'}</span>
+      ${i?(S.coDel===c.key?`<span class="row"><button class="btn sm danger" data-act="codel" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px;color:var(--bad)">Po, hiqe</button><button class="btn" data-act="codelno" style="padding:5px 9px;font-size:12.5px">Jo</button></span>`
+        :`<button class="btn ghost" data-act="codelask" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px">Hiq</button>`):''}</h3>`:''}
+    <div class="grid2">${f(c,'name','Emri i kompanisë')}${f(c,'nipt','NIPT')}${f(c,'slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f(c,'address','Adresa')}${f(c,'phone','Telefoni','(+355) 6X XXX XXXX')}${f(c,'email','Email')}</div></div>`;
+  const addCard=own.length>=MAX_NIPTS?`<div class="small muted">Llogaria ka ${MAX_NIPTS} NIPT-e, që është kufiri.</div>`
+    :`<div class="card"><h3>Shto një NIPT tjetër</h3>
+    <div class="small muted" style="margin-bottom:10px">Për bizneset me disa NIPT-e: të gjitha menaxhohen nga kjo llogari, veç e veç ose në total. ${SB?`Çdo NIPT shtesë kushton ${price(6000)} në vit. `:''}Deri në ${MAX_NIPTS} NIPT-e.</div>
+    <div class="grid2">
+    <div class="field"><label for="co-add-name">Emri i kompanisë</label><input id="co-add-name" type="text" autocomplete="off"></div>
+    <div class="field"><label for="co-add-nipt">NIPT</label><input id="co-add-nipt" type="text" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="L12345678A" style="text-transform:uppercase"></div>
+    <div class="field wide"><label for="co-add-address">Adresa</label><input id="co-add-address" type="text" autocomplete="off" placeholder="Rruga, qyteti"></div></div>
+    <div class="row end"><button class="btn primary" data-act="coaddmore">Shto NIPT-in</button></div></div>`;
   return `<div class="top"><h1>Settings</h1><span class="row">${SB?'<button class="btn ghost" data-act="logout">Dil</button>':''}<button class="btn ghost" data-act="back">‹ Mbyll</button></span></div>
   ${c?`<div class="small muted">Këto të dhëna dalin në kokën e kontratës së shitjes. Ruhen vetë sapo del nga fusha.</div>
-  <div class="card"><div class="grid2">${f('name','Emri i kompanisë')}${f('nipt','NIPT')}${f('slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f('address','Adresa')}${f('phone','Telefoni','(+355) 6X XXX XXXX')}${f('email','Email')}</div></div>
+  ${own.map(coCard).join('')}
+  ${addCard}
   <div class="card"><h3>Kursi i këmbimit</h3>${S.boa&&S.boa.rates?`<div class="kv">${['EUR','USD','GBP','CHF'].filter(k=>num(S.boa.rates[k])>0).map(k=>`<div><span>1 ${k}</span><span>${fmt(num(S.boa.rates[k]),2)} L</span></div>`).join('')}</div>
     <div class="small ${boaAge()>5?'':'muted'}" ${boaAge()>5?'style="color:var(--bad)"':''}>Kursi zyrtar i Bankës së Shqipërisë, datë ${dmy(S.boa.date)}${S.boa.time?' ora '+esc(String(S.boa.time).slice(0,5)):''}.${boaAge()>5?' Është më i vjetër se 5 ditë, ndaj nuk përdoret te shitjet.':' Përdoret te shitjet në euro.'}</div>`
     :'<div class="small muted">Kursi i Bankës së Shqipërisë nuk është ngarkuar ende. Te shitja në euro kursi shkruhet me dorë.</div>'}</div>`
@@ -615,6 +665,7 @@ function viewCompany(){
   ${SB&&S.sub?`<div class="card"><h3>Abonimi</h3><div class="kv">
     ${S.sub.plan?`<div><span>Plani</span><span>${esc(S.sub.plan)}</span></div>`:''}
     ${S.sub.price!=null?`<div><span>Çmimi</span><span>${fmt(num(S.sub.price),0)} ${S.sub.currency==='ALL'?'L':S.sub.currency==='EUR'?'€':esc(S.sub.currency||'')}${/vjet/i.test(S.sub.plan||'')?' në vit':/muj/i.test(S.sub.plan||'')?' në muaj':''}</span></div>`:''}
+    ${own.length>1?`<div><span>NIPT-e</span><span>1 kryesor + ${own.length-1} shtesë</span></div>`:''}
     <div><span>Vlen deri më</span><span ${subExpired()?'style="color:var(--bad)"':''}>${S.sub.expires_on?dmy(S.sub.expires_on):'pa afat'}</span></div></div>
     <div class="small ${subExpired()?'':'muted'}" ${subExpired()?'style="color:var(--bad)"':''}>${subExpired()?'Abonimi ka skaduar. Programi është vetëm për lexim derisa të rinovohet.':subDays()===null?'':subDays()===0?'Skadon sot.':'Edhe '+subDays()+' ditë.'} ${subDays()===null?'':'Për rinovim, kontakto '+SUB_CONTACT+'.'}</div></div>`:''}
   ${installHtml(true)}
@@ -651,8 +702,9 @@ async function doChangePass(){
 
 /* ---------- contract ---------- */
 const sellerKey=v=>String(v.importer_nipt||v.importer||'shitesi').replace(/[^A-Za-z0-9_-]/g,'_');
-function nextContractNo(year){
-  let m=0;for(const x of S.vehicles){const n=x.sale&&x.sale.contract_no;if(n&&String(n).endsWith('/'+year))m=Math.max(m,parseInt(n)||0)}
+function nextContractNo(year,v){
+  const ok=v?ownerKey(v):null;
+  let m=0;for(const x of S.vehicles){if(ok&&ownerKey(x)!==ok)continue;const n=x.sale&&x.sale.contract_no;if(n&&String(n).endsWith('/'+year))m=Math.max(m,parseInt(n)||0)}
   return (m+1)+'/'+year;
 }
 function splitMake(mm){
@@ -661,7 +713,7 @@ function splitMake(mm){
   const i=s.indexOf(' ');return i<0?[s,'']:[s.slice(0,i),s.slice(i+1).trim()];
 }
 function contractData(v){
-  const c=calc(v),s=v.sale||{},sel=mainCompany()||{},B='________________';
+  const c=calc(v),s=v.sale||{},sel=ownerCompany(v)||{},B='________________';
   const coName=sel.name||'',eur=s.cur==='EUR'&&num(s.rate)>0,k=eur?1/num(s.rate):1,unit=eur?'euro':'lekë';
   const m=x=>eur?money(Math.round(x*k*100)/100):fmt(x);
   return {brand:String(coName||'SHITËSI').replace(/\b(SH\.?P\.?K\.?|SH\.?A\.?)\b/gi,'').replace(/\s*-\s*/g,' ').replace(/\s+/g,' ').trim(),
@@ -943,6 +995,25 @@ document.addEventListener('click',e=>{
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='install'){doInstall();return}
+  if(act==='co'){S.co=b.dataset.v;try{localStorage.setItem(LSC,S.co)}catch(x){}render();return}
+  if(act==='codelask'){S.coDel=b.dataset.v;render();return}
+  if(act==='codelno'){S.coDel=null;render();return}
+  if(act==='codel'){
+    const k=b.dataset.v,ks=ownKeys(),n=S.vehicles.filter(x=>ownerKey(x)===k).length;S.coDel=null;
+    if(k===ks[0]||!ks.includes(k)){render();return}
+    if(n){toast('Ky NIPT ka '+n+' mjete. Kaloji te një kompani tjetër (Ndrysho blerjen) para se ta heqësh.');render();return}
+    S.settings.nipts=ks.filter(x=>x!==k);if(S.settings.sellers)delete S.settings.sellers[k];
+    if(S.co===k)S.co='all';saveSettings();if(S.loadSub)setTimeout(S.loadSub,1200);render();return}
+  if(act==='coaddmore'){
+    const name=$('#co-add-name').value.trim(),nipt=$('#co-add-nipt').value.trim().toUpperCase(),address=$('#co-add-address').value.trim(),ks=ownKeys();
+    if(subExpired()){toast(SUB_RO);return}
+    if(ks.length>=MAX_NIPTS){toast('Llogaria ka arritur kufirin prej '+MAX_NIPTS+' NIPT-esh.');return}
+    if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
+    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt)){toast('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).');return}
+    const k=sellerKey({importer_nipt:nipt});
+    if(ks.includes(k)){toast('Ky NIPT është tashmë në llogari.');return}
+    S.settings.sellers=S.settings.sellers||{};S.settings.sellers[k]=Object.assign({},S.settings.sellers[k],{name,nipt},address?{address}:{});
+    S.settings.nipts=ks.concat(k);saveSettings();if(S.loadSub)setTimeout(S.loadSub,1200);toast('NIPT-i u shtua.');render();return}
   if(act==='pwchange'){doChangePass();return}
   if(act==='company'){S.view='company';S.pwErr='';S.pwMsg='';scrollTo(0,0)}
   else if(act==='coadd'){
@@ -952,7 +1023,7 @@ document.addEventListener('click',e=>{
     if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt)){toast('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).');return}
     if(adr&&!address){toast('Shkruaj adresën e kompanisë.');return}
     const k=sellerKey({importer_nipt:nipt});S.settings.sellers=S.settings.sellers||{};
-    if(companies().length){toast('Kompania është vendosur tashmë.');return}
+    if(ownKeys().length){toast('Kompania është vendosur tashmë.');return}
     S.settings.sellers[k]=Object.assign({name,nipt},address?{address}:{},phone?{phone}:{});S.settings.company=k;saveSettings();
     if(S.onboard){S.onboard=false;S.view='list'}
   }
@@ -961,7 +1032,7 @@ document.addEventListener('click',e=>{
   else if(act==='repmode'){S.rep.mode=b.dataset.v}
   else if(act==='xlsx'){exportReport();return}
   else if(act==='new'&&subExpired()){toast(SUB_RO);return}
-  else if(act==='new'){S.niptAck=null;S.draft=newDraft();S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
+  else if(act==='new'){S.niptAck=null;S.ownerTouched=false;S.draft=newDraft();S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
   else if(act==='open'){S.id=b.dataset.id;S.view='detail';S.confirmDel=false;S.confirmUnsell=false;scrollTo(0,0)}
   else if(act==='back'){S.view='list'}
   else if(act==='cancel'){if(scanCtl)scanCtl.abort();S.view=S.vehicles.some(x=>x.id===S.draft.id)?'detail':'list'}
@@ -972,6 +1043,7 @@ document.addEventListener('click',e=>{
     const nm=niptMismatch(d);if(nm&&S.niptAck!==d.id){S.niptAck=d.id;toast(nm+' Shtyp përsëri "Ruaj blerjen" nëse do ta ruash gjithsesi.');return}
     const dup=d.vin&&S.vehicles.find(x=>x.id!==d.id&&x.vin&&x.vin===d.vin);
     if(dup){toast('Ky numër shasie është regjistruar tashmë: '+(dup.make_model||''));return}
+    if(ownKeys().length>1){if(!S.ownerTouched||!ownKeys().includes(d.owner))d.owner=autoOwner(d)}else delete d.owner;
     save(JSON.parse(JSON.stringify(d)));S.id=d.id;S.view='detail';S.confirmDel=false;scrollTo(0,0);
   }
   else if(act==='edit'&&v){S.draft=JSON.parse(JSON.stringify(v));S.auto=new Set();S.scan={busy:false,msg:'',err:''};S.view='form';scrollTo(0,0)}
@@ -993,7 +1065,7 @@ document.addEventListener('click',e=>{
     if(S.view==='detail')save(t);
     const c=calc(t);S.cal.open=false;S.sale={buyer:'',buyer_id:'',is_nipt:false,address:'',city:'',date:today(),cur:'ALL',rate:boaRate('EUR')||num(t.pricing&&t.pricing.eur_rate)||'',rateSrc:boaRate('EUR')?'boa':'',price:c.markup?Math.round(c.price):'',sugg:c.markup?Math.round(c.price):0,touched:false};S.view='sell';scrollTo(0,0);
   }
-  else if(act==='contract'&&v&&v.sale){if(!v.sale.contract_no){v.sale.contract_no=nextContractNo(String(v.sale.date||today()).slice(0,4));save(v)}S.view='contract';scrollTo(0,0)}
+  else if(act==='contract'&&v&&v.sale){if(!v.sale.contract_no){v.sale.contract_no=nextContractNo(String(v.sale.date||today()).slice(0,4),v);save(v)}S.view='contract';scrollTo(0,0)}
   else if(act==='cback'){S.view='detail';S.confirmUnsell=false}
   else if(act==='cpdf'){downloadContract(true);return}
   else if(act==='cfile'){shareContract();return}
@@ -1019,7 +1091,7 @@ document.addEventListener('click',e=>{
     const price=eur?Math.round(pc*rate*100)/100:pc;
     v.status='sold';v.sale={buyer:String(S.sale.buyer||'').trim(),buyer_id:String(S.sale.buyer_id||'').trim().toUpperCase(),buyer_is_nipt:!!S.sale.is_nipt,address:String(S.sale.address||'').trim(),city:String(S.sale.city||'').trim(),date:S.sale.date||today(),price};
     if(eur){v.sale.cur='EUR';v.sale.rate=rate;if(num(S.settings.eur_rate)!==rate){S.settings.eur_rate=rate;saveSettings()}}
-    v.sale.contract_no=nextContractNo(v.sale.date.slice(0,4));save(v);
+    v.sale.contract_no=nextContractNo(v.sale.date.slice(0,4),v);save(v);
     S.view='contract';S.confirmDel=false;scrollTo(0,0);
   }
   else if(act==='unsell'){S.confirmUnsell=true}
@@ -1031,7 +1103,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.f&&S.view==='form'){
-    const k=t.dataset.f;
+    const k=t.dataset.f;if(k==='owner')S.ownerTouched=true;
     S.draft[k]=t.type==='checkbox'?t.checked:(k==='vin'?t.value.toUpperCase().trim():t.value);
     S.auto.delete(k);t.classList.remove('auto');
     if(k==='source'){if(t.value==='local'){S.draft.regime='';if(!S.draft.supplier_country)S.draft.supplier_country='Shqipëri'}else if(!S.draft.regime)S.draft.regime='IM4';render();return}
@@ -1306,7 +1378,7 @@ async function startSupabase(){
   if(error||!cid){clearTimeout(timer);S.view='login';S.loginErr='Hyrja u krye, por kompania nuk u ngarkua. Provo përsëri.';render();return}
   const loadSub=async()=>{try{const {data,error}=await SB.from('subscriptions').select('plan,price,currency,expires_on').eq('company_id',cid).maybeSingle();
     if(!error){const was=JSON.stringify(S.sub||null);S.sub=data||null;if(was!==JSON.stringify(S.sub)&&(S.view==='list'||S.view==='company'))render()}}catch(e){}};
-  loadSub();setInterval(loadSub,15*60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadSub()});
+  S.loadSub=loadSub;loadSub();setInterval(loadSub,15*60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadSub()});
   S.sample=supaScan(SB);S.imgLimits=(await S.sample.limits()).images;
   attachDb(supaDb(SB,cid),timer);
 }
