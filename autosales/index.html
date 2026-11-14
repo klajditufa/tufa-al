@@ -788,7 +788,7 @@ async function prepImages(files,maxCount){
   }
   return out.length?out:files;
 }
-const SCAN_ERR={no_key:'Skanimi nuk është aktivizuar ende në server. Plotëso fushat me dorë.',not_granted:'Skanimi nuk u lejua. Plotëso fushat me dorë.',rate_limited:'Shumë kërkesa. Provo pas pak.',image_rejected:'Fotoja nuk u pranua. Provo një foto tjetër (JPEG ose PNG).',
+const SCAN_ERR={scan_disabled:'Skanimi nuk është pjesë e abonimit tuaj. Plotëso fushat me dorë.',no_key:'Skanimi nuk është aktivizuar ende në server. Plotëso fushat me dorë.',not_granted:'Skanimi nuk u lejua. Plotëso fushat me dorë.',rate_limited:'Shumë kërkesa. Provo pas pak.',image_rejected:'Fotoja nuk u pranua. Provo një foto tjetër (JPEG ose PNG).',
   images_unavailable:'Kjo pamje nuk dërgon dot foto. Plotëso fushat me dorë.',refused:'Dokumenti nuk u lexua. Provo një foto më të qartë.',invalid_json:'Leximi doli i paqartë. Provo përsëri me foto më të afërt.',
   session_expired:'Hyr përsëri në Claude dhe provo.',sampling_disabled:'Skanimi nuk është i disponueshëm për këtë llogari.'};
 async function runScan(fileList){
