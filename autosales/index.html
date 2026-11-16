@@ -637,7 +637,26 @@ function companies(){
   const m={},sel=S.settings.sellers||{};
   for(const v of S.vehicles)if(v.importer_nipt||v.importer){const k=sellerKey(v);m[k]=m[k]||{key:k,name:v.importer||'',nipt:v.importer_nipt||''}}
   for(const k in sel)m[k]=Object.assign(m[k]||{key:k,name:'',nipt:k},{});
-  return Object.values(m).map(c=>{const s=sel[c.key]||{};return {key:c.key,name:s.name||c.name,nipt:s.nipt||c.nipt,address:s.address||'',phone:s.phone||'',email:s.email||'',slogan:s.slogan===undefined?'Import dhe shitje automjetesh':s.slogan}});
+  return Object.values(m).map(c=>{const s=sel[c.key]||{};return {key:c.key,name:s.name||c.name,nipt:s.nipt||c.nipt,address:s.address||'',phone:s.phone||'',email:s.email||'',slogan:s.slogan===undefined?'Import dhe shitje automjetesh':s.slogan,banks:Array.isArray(s.banks)?s.banks:[]}});
+}
+/* Llogaritë bankare të çdo NIPT-i: sellers[k].banks = [{bank, iban, cur}]. IBAN-i ruhet pa hapësira dhe shfaqet në grupe nga 4. */
+const BANK_CUR=['ALL','EUR','USD'];
+const ibanClean=x=>String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const ibanShow=x=>ibanClean(x).replace(/(.{4})(?=.)/g,'$1 ');
+function ibanOk(x){const v=ibanClean(x);if(v.length<15||v.length>34||!/^[A-Z]{2}\d{2}/.test(v))return false;if(v.startsWith('AL')&&v.length!==28)return false;
+  const r=(v.slice(4)+v.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55);let m=0;for(const d of r)m=(m*10+ +d)%97;return m===1}
+const ibanWarn=x=>{const v=ibanClean(x);return !v||ibanOk(v)?'':'IBAN-i nuk duket i saktë'+(v.startsWith('AL')&&v.length!==28?': IBAN-i shqiptar ka 28 shenja, ky ka '+v.length:'')+'. Kontrolloje me atë të bankës.'};
+function banksHtml(c){
+  const k=esc(c.key),B=c.banks;
+  return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><div class="small" style="font-weight:600;margin-bottom:8px">Llogaritë bankare</div>
+    ${B.map((b,i)=>`<div class="grid2" style="margin-bottom:10px;align-items:end">
+      <div class="field"><label for="bk-${k}-${i}-bank">Banka</label><input id="bk-${k}-${i}-bank" data-bk="${k}" data-i="${i}" data-bf="bank" type="text" value="${esc(b.bank||'')}" placeholder="p.sh. BKT, Raiffeisen" autocomplete="off"></div>
+      <div class="field"><label for="bk-${k}-${i}-cur">Monedha</label><div class="row" style="flex-wrap:nowrap"><select id="bk-${k}-${i}-cur" data-bk="${k}" data-i="${i}" data-bf="cur">${BANK_CUR.map(x=>`<option value="${x}" ${x===(b.cur||'ALL')?'selected':''}>${x==='ALL'?'Lekë (ALL)':x==='EUR'?'Euro (EUR)':'Dollarë (USD)'}</option>`).join('')}</select>
+        ${S.bankDel===c.key+':'+i?`<button class="btn danger" data-act="bankdel" data-v="${k}" data-i="${i}" style="flex:none;color:var(--bad)">Po, hiqe</button><button class="btn" data-act="bankdelno" style="flex:none">Jo</button>`
+          :`<button class="btn ghost" data-act="bankdelask" data-v="${k}" data-i="${i}" style="flex:none" aria-label="Hiq llogarinë ${i+1}">Hiq</button>`}</div></div>
+      <div class="field wide"><label for="bk-${k}-${i}-iban">IBAN</label><input id="bk-${k}-${i}-iban" data-bk="${k}" data-i="${i}" data-bf="iban" type="text" value="${esc(ibanShow(b.iban))}" placeholder="AL00 0000 0000 0000 0000 0000 0000" autocomplete="off" autocapitalize="characters" spellcheck="false" style="font-family:var(--mono);font-size:13px;letter-spacing:0;text-transform:uppercase;padding-left:9px;padding-right:9px">
+        <div class="small" id="bk-${k}-${i}-warn" style="color:var(--warn);margin-top:4px" ${ibanWarn(b.iban)?'':'hidden'}>${ibanWarn(b.iban)}</div></div></div>`).join('')}
+    <button class="btn" data-act="bankadd" data-v="${k}">+ ${B.length?'Shto një llogari tjetër':'Shto llogari bankare'}</button></div>`;
 }
 function mainCompany(){return ownCompanies()[0]}
 function viewCompany(){
@@ -655,7 +674,7 @@ function viewCompany(){
   const coCard=(c,i)=>`<div class="card">${own.length>1||i?`<h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${i?'NIPT shtesë '+i:'Kompania kryesore'}</span>
       ${i?(S.coDel===c.key?`<span class="row"><button class="btn sm danger" data-act="codel" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px;color:var(--bad)">Po, hiqe</button><button class="btn" data-act="codelno" style="padding:5px 9px;font-size:12.5px">Jo</button></span>`
         :`<button class="btn ghost" data-act="codelask" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px">Hiq</button>`):''}</h3>`:''}
-    <div class="grid2">${f(c,'name','Emri i kompanisë')}${f(c,'nipt','NIPT')}${f(c,'slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f(c,'address','Adresa')}${f(c,'phone','Telefoni','(+355) 6X XXX XXXX')}${f(c,'email','Email')}</div>${fiscalCard(c)}</div>`;
+    <div class="grid2">${f(c,'name','Emri i kompanisë')}${f(c,'nipt','NIPT')}${f(c,'slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f(c,'address','Adresa')}${f(c,'phone','Telefoni','(+355) 6X XXX XXXX')}${f(c,'email','Email')}</div>${banksHtml(c)}${fiscalCard(c)}</div>`;
   const addCard=own.length>=MAX_NIPTS?`<div class="small muted">Llogaria ka ${MAX_NIPTS} NIPT-e, që është kufiri.</div>`
     :`<div class="card"><h3>Shto një NIPT tjetër</h3>
     <div class="small muted" style="margin-bottom:10px">Për bizneset me disa NIPT-e: të gjitha menaxhohen nga kjo llogari, veç e veç ose në total. ${SB?`Çdo NIPT shtesë kushton ${price(6000)} në vit. `:''}Deri në ${MAX_NIPTS} NIPT-e.</div>
@@ -1203,6 +1222,15 @@ document.addEventListener('click',e=>{
     }).catch(e=>{S.fiscBusy=null;S.fiscErr={key:t.id,msg:FISC_ERR[e.code]||FISC_ERR.upstream_error};if(S.view==='detail')render()});
     return}
   if(act==='co'){S.co=b.dataset.v;if(!S.viewAs)try{localStorage.setItem(LSC,S.co)}catch(x){}render();return}
+  if(act==='bankadd'||act==='bankdel'){
+    if(subExpired()){toast(roMsg());return}
+    const k=b.dataset.v,cur=companies().find(c=>c.key===k)||{};S.settings.sellers=S.settings.sellers||{};
+    const row=S.settings.sellers[k]=Object.assign({name:cur.name||'',nipt:cur.nipt||''},S.settings.sellers[k]);
+    row.banks=(Array.isArray(row.banks)?row.banks:[]).slice();S.bankDel=null;
+    if(act==='bankadd'){row.banks.push({bank:'',iban:'',cur:'ALL'});render();const i=$('#bk-'+CSS.escape(k)+'-'+(row.banks.length-1)+'-bank');if(i)i.focus();return}
+    row.banks.splice(+b.dataset.i,1);saveSettings();render();return}
+  if(act==='bankdelask'){S.bankDel=b.dataset.v+':'+b.dataset.i;render();return}
+  if(act==='bankdelno'){S.bankDel=null;render();return}
   if(act==='codelask'){S.coDel=b.dataset.v;render();return}
   if(act==='codelno'){S.coDel=null;render();return}
   if(act==='codel'){
@@ -1354,6 +1382,10 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.std!==undefined){saveSettings();t.value=S.settings.default_pct===''?'':S.settings.default_pct+'%';return}
   if(t.dataset.sd!==undefined){const d=parseDmy(t.value);if(d)S.sale.date=d;else toast('Data nuk u kuptua. Shkruaje si DD.MM.VVVV, p.sh. 10.11.2026.');t.value=longDate(S.sale.date);return}
+  if(t.dataset.bk&&S.view==='company'){
+    const k=t.dataset.bk,i=+t.dataset.i,f=t.dataset.bf,row=(S.settings.sellers||{})[k];if(!row||!Array.isArray(row.banks)||!row.banks[i])return;
+    row.banks[i]=Object.assign({},row.banks[i],{[f]:f==='iban'?ibanClean(t.value):t.value.trim()});saveSettings();
+    if(f==='iban'){t.value=ibanShow(t.value);const w=$('#'+CSS.escape(t.id.replace(/iban$/,'warn')));if(w){w.textContent=ibanWarn(t.value);w.hidden=!w.textContent}}return}
   if(t.dataset.sel||t.dataset.co){saveSettings();return}
   if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
   if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
