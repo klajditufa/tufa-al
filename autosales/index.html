@@ -595,7 +595,7 @@ function viewSell(){
     <div id="sout"></div></div>
   ${fiscalOn()?`<div class="card"><h3>Pagesa</h3><div class="seg" role="group" aria-label="Mënyra e pagesës">${Object.keys(PAY_NAME).map(k=>`<button data-act="spay" data-v="${k}" aria-pressed="${(s.pay||'CASH')===k}">${PAY_NAME[k]}</button>`).join('')}</div>
     <div class="small" id="pay-warn" style="margin-top:8px;color:var(--bad);font-weight:600" hidden></div>
-    <div class="small muted" style="margin-top:8px">Përdoret te fatura e fiskalizuar. Me bankë, për blerës me NIPT lëshohet faturë elektronike. Para në dorë lejohet deri në ${lek(CASH_MAX.ind)} për individë dhe ${lek(CASH_MAX.biz)} për biznese, me TVSH.</div></div>`:''}
+    <div class="small muted" style="margin-top:8px">Përdoret te fatura e fiskalizuar. Me bankë, për blerës me NIPT lëshohet faturë elektronike. Para në dorë dhe kartë lejohen deri në ${lek(CASH_MAX.ind)} për individë dhe ${lek(CASH_MAX.biz)} për biznese, me TVSH; mbi këto vlera vetëm me bankë.</div></div>`:''}
   <div class="row end"><button class="btn" data-act="sellcancel">Anulo</button><button class="btn primary" data-act="sellconfirm">Përfundo shitjen</button></div>`;
 }
 const money=n=>fmt(n,Math.abs(n-Math.round(n))<0.005?0:2);
@@ -1356,7 +1356,7 @@ document.addEventListener('click',e=>{
     if(S.view==='detail')save(t);
     const c=calc(t);S.cal.open=false;S.sale={buyer:'',buyer_id:'',is_nipt:false,address:'',city:'',date:today(),cur:'ALL',rate:boaRate('EUR')||num(t.pricing&&t.pricing.eur_rate)||'',rateSrc:boaRate('EUR')?'boa':'',price:c.markup?Math.round(c.price):'',sugg:c.markup?Math.round(c.price):0,touched:false};S.view='sell';scrollTo(0,0);
   }
-  else if(act==='contract'&&v&&v.sale&&saleCashBlock(v)){toast('Kontrata nuk nxirret: '+saleCashBlock(v)+' Ktheje mjetin në stok dhe shite përsëri me bankë ose kartë.');return}
+  else if(act==='contract'&&v&&v.sale&&saleCashBlock(v)){toast('Kontrata nuk nxirret: '+saleCashBlock(v)+' Ktheje mjetin në stok dhe shite përsëri me bankë.');return}
   else if(act==='contract'&&v&&v.sale){if(!v.sale.contract_no){v.sale.contract_no=nextContractNo(String(v.sale.date||today()).slice(0,4),v);save(v)}S.view='contract';scrollTo(0,0)}
   else if(act==='cback'){S.view='detail';S.confirmUnsell=false}
   else if(act==='cpdf'){downloadContract(true);return}
@@ -1555,13 +1555,13 @@ async function fiscalPdf(v){
   S.pdfBusy=null;if(S.view==='detail')render();
 }
 /* Kufiri ligjor i pagesave me para në dorë (ligji nr. 9920/2008 "Për procedurat tatimore", neni 59, i ndryshuar me ligjin nr. 79/2025):
-   deri 500 000 lekë me një individ, deri 100 000 lekë mes bizneseve. Vlera merret me TVSH. Zbatohet vetëm kur fiskalizimi është i ndezur,
+   deri 500 000 lekë me një individ, deri 100 000 lekë mes bizneseve. Vlera merret me TVSH. Me kërkesë të pronarit, kufiri vlen edhe për kartën. Zbatohet vetëm kur fiskalizimi është i ndezur,
    sepse vetëm atëherë programi e di mënyrën e pagesës. */
 const CASH_MAX={ind:500000,biz:100000};
 function cashBlock(netLek,isNipt,pay){
-  if(!fiscalOn()||(pay||'CASH')!=='CASH')return '';
+  if(!fiscalOn()||(pay||'CASH')==='BANK')return ''; // karta numërohet si para në dorë: te fiskalizimi fatura me kartë del e llojit CASH
   const gross=num(netLek)*(1+VAT_SALE),lim=isNipt?CASH_MAX.biz:CASH_MAX.ind;
-  return gross>lim?`Shitja me TVSH është ${lek(gross)}. Me para në dorë lejohet deri në ${lek(lim)} ${isNipt?'mes bizneseve':'për një individ'} (ligji për procedurat tatimore, neni 59). Zgjidh Bankë ose Kartë.`:'';
+  return gross>lim?`Shitja me TVSH është ${lek(gross)}. Me para në dorë ose kartë lejohet deri në ${lek(lim)} ${isNipt?'mes bizneseve':'për një individ'} (ligji për procedurat tatimore, neni 59). Zgjidh Bankë.`:'';
 }
 const saleCashBlock=v=>v&&v.sale&&!fiscDone(v)?cashBlock(v.sale.price,v.sale.buyer_is_nipt,v.sale.pay):'';
 function sellPayWarn(){
