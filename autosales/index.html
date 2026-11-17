@@ -246,6 +246,7 @@ function render(){
   else if(S.view==='detail')app.innerHTML=viewDetail();
   else if(S.view==='sell')app.innerHTML=viewSell();
   else if(S.view==='contract')app.innerHTML=viewContract();
+  else if(S.view==='pdf'){const f=$('#pdfframe');if(!f||!S.pdfDoc||f.dataset.u!==S.pdfDoc.url)app.innerHTML=viewPdf()} // nuk rindërtohet kot: do ta ringarkonte PDF-në
   else if(S.view==='company')app.innerHTML=viewCompany();
   else if(S.view==='import')app.innerHTML=viewImport();
   else app.innerHTML=viewList();
@@ -593,11 +594,13 @@ function viewSell(){
     <div class="field"><label for="s-pricevat">Çmimi me TVSH 20% (${unit})</label><input id="s-pricevat" data-s="priceVat" type="text" inputmode="numeric" class="num" value="${pv===''?'':money(pv)}" autocomplete="off"></div></div>
     <div id="sout"></div></div>
   ${fiscalOn()?`<div class="card"><h3>Pagesa</h3><div class="seg" role="group" aria-label="Mënyra e pagesës">${Object.keys(PAY_NAME).map(k=>`<button data-act="spay" data-v="${k}" aria-pressed="${(s.pay||'CASH')===k}">${PAY_NAME[k]}</button>`).join('')}</div>
-    <div class="small muted" style="margin-top:8px">Përdoret te fatura e fiskalizuar. Me bankë, për blerës me NIPT lëshohet faturë elektronike.</div></div>`:''}
+    <div class="small" id="pay-warn" style="margin-top:8px;color:var(--bad);font-weight:600" hidden></div>
+    <div class="small muted" style="margin-top:8px">Përdoret te fatura e fiskalizuar. Me bankë, për blerës me NIPT lëshohet faturë elektronike. Para në dorë lejohet deri në ${lek(CASH_MAX.ind)} për individë dhe ${lek(CASH_MAX.biz)} për biznese, me TVSH.</div></div>`:''}
   <div class="row end"><button class="btn" data-act="sellcancel">Anulo</button><button class="btn primary" data-act="sellconfirm">Përfundo shitjen</button></div>`;
 }
 const money=n=>fmt(n,Math.abs(n-Math.round(n))<0.005?0:2);
 function updateSellOut(){
+  sellPayWarn();
   const el=$('#sout'),v=S.vehicles.find(x=>x.id===S.id);if(!el||!v||!S.sale)return;
   const c=calc(v),s=S.sale,eur=s.cur==='EUR',rate=num(s.rate),p=num(s.price),pAll=eur?p*rate:p,profit=pAll-c.cost,ok=p>0&&(!eur||rate>0);
   const show=x=>eur?`€ ${money(x)}${rate>0?` <span class="muted small">= ${lek(x*rate)}</span>`:''}`:lek(x);
@@ -818,6 +821,20 @@ function contractHtml(v){
   ${k.text.map(t=>`<p style="font-size:12px;line-height:1.5;color:#44525a;border-left:3px solid ${P};padding-left:10px;text-align:justify">${esc(t)}</p>`).join('')}
   <div class="sig"><div><b>SHITËSI</b><br>${esc(k.seller.name)}<br><br>______________________</div><div><b>BLERËSI</b><br>${esc(k.buyer.name)}<br><br>______________________</div></div>`;
 }
+// Fatura e fiskalizuar e hapur brenda programit: shihet, printohet ose shkarkohet; asgjë nuk shkarkohet vetë.
+function viewPdf(){
+  const d=S.pdfDoc;if(!d)return header()+`<div class="empty">Fatura nuk është hapur.</div><button class="btn" data-act="pdfback">Kthehu te mjeti</button>`;
+  const btns=`<a class="btn" href="${d.url}" download="${esc(d.name)}">Shkarko</a><button class="btn primary" data-act="pdfprint">Printo</button>`;
+  // Në telefon shfletuesit nuk e shfaqin PDF-në brenda faqes (disa e shkarkojnë vetë), ndaj aty jepen vetëm butonat.
+  if(touch)return `<div class="top"><button class="btn ghost" data-act="pdfback">‹ Mjeti</button></div>
+  <div class="card" id="pdfframe" data-u="${d.url}"><h3>${esc(d.title)}</h3><div class="small muted" style="margin-bottom:12px">Fatura e fiskalizuar është gati. Hape për ta parë ose printuar, ose shkarkoje.</div>
+    <div style="display:flex;flex-direction:column;gap:10px"><a class="btn primary" href="${d.url}" target="_blank" rel="noopener" style="padding:14px;text-align:center">Hape faturën</a>
+    <a class="btn" href="${d.url}" download="${esc(d.name)}" style="padding:14px;text-align:center">Shkarko</a>${navigator.share?'<button class="btn" data-act="pdfshare" style="padding:14px">Dërgo</button>':''}</div></div>`;
+  return `<div class="top"><button class="btn ghost" data-act="pdfback">‹ Mjeti</button><span class="row">${btns}</span></div>
+  <iframe id="pdfframe" data-u="${d.url}" src="${d.url}" title="${esc(d.title)}" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:12px;background:#fff"></iframe>
+  <div class="row" style="justify-content:space-between"><span class="small muted">${esc(d.title)}. Nëse fatura nuk shfaqet këtu, hape në dritare të re.</span><a class="btn" href="${d.url}" target="_blank" rel="noopener">Hape në dritare të re</a></div>`;
+}
+function closePdf(){if(S.pdfDoc){try{URL.revokeObjectURL(S.pdfDoc.url)}catch(e){}S.pdfDoc=null}}
 function viewContract(){
   const v=S.vehicles.find(x=>x.id===S.id);
   if(!v||v.status!=='sold')return header()+`<div class="empty">Kontrata del pasi mjeti të jetë shitur.</div><button class="btn" data-act="back">Kthehu te lista</button>`;
@@ -1231,7 +1248,7 @@ document.addEventListener('click',e=>{
   if(act==='imprm'){S.imp.rows.splice(+b.dataset.i,1);render();return}
   if(act==='impclear'){S.imp.rows=[];render();return}
   if(act==='impcommit'){impCommit();render();return}
-  if(act==='spay'&&S.sale){S.sale.pay=b.dataset.v;document.querySelectorAll('[data-act=spay]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===S.sale.pay)));return}
+  if(act==='spay'&&S.sale){S.sale.pay=b.dataset.v;document.querySelectorAll('[data-act=spay]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===S.sale.pay)));sellPayWarn();return}
   if(act==='fiscon'){
     const k=b.dataset.v,g=id=>document.getElementById(id+k),token=g('fi-tok-').value.trim(),provider=g('fi-prov-').value,operator_code=g('fi-op-').value.trim();
     if(token.length<8){S.fiscErr={key:k,msg:'Ngjit tokenin e API-t.'};render();return}
@@ -1243,9 +1260,13 @@ document.addEventListener('click',e=>{
     const k=b.dataset.v;S.fiscBusy=k;S.fiscErr=null;render();
     fiscalCall({action:'disconnect',nipt_key:k}).then(()=>{S.fiscBusy=null;return loadFiscal()}).catch(e=>{S.fiscBusy=null;S.fiscErr={key:k,msg:FISC_ERR[e.code]||FISC_ERR.upstream_error};render()});
     return}
+  if(act==='pdfback'){closePdf();S.view='detail';render();return}
+  if(act==='pdfshare'&&S.pdfDoc){try{const f=new File([S.pdfDoc.blob],S.pdfDoc.name,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:S.pdfDoc.title}).catch(()=>{});else toast('Ky telefon nuk e dërgon dot skedarin; shkarkoje.')}catch(x){toast('Dërgimi nuk u hap; shkarkoje.')}return}
+  if(act==='pdfprint'){const f=$('#pdfframe');try{f.contentWindow.focus();f.contentWindow.print()}catch(x){if(S.pdfDoc)window.open(S.pdfDoc.url,'_blank','noopener')}return}
   if(act==='fiscpdf'){const t=S.vehicles.find(x=>x.id===S.id);if(t&&fiscDone(t))fiscalPdf(t);return}
   if(act==='fiscalize'){
     const t=S.vehicles.find(x=>x.id===S.id);if(!t||!t.sale||S.fiscBusy)return;
+    if(saleCashBlock(t)){toast('Nuk fiskalizohet: '+saleCashBlock(t));return}
     if(subExpired()){toast(roMsg());return}
     if(!t.sale.fiscal_seq){t.sale.fiscal_seq=(t.cancelled||[]).length+1} // pas një anulimi, shitja e re merr numër të ri dokumenti
     S.fiscBusy=t.id;S.fiscErr=null;save(t);render();
@@ -1335,6 +1356,7 @@ document.addEventListener('click',e=>{
     if(S.view==='detail')save(t);
     const c=calc(t);S.cal.open=false;S.sale={buyer:'',buyer_id:'',is_nipt:false,address:'',city:'',date:today(),cur:'ALL',rate:boaRate('EUR')||num(t.pricing&&t.pricing.eur_rate)||'',rateSrc:boaRate('EUR')?'boa':'',price:c.markup?Math.round(c.price):'',sugg:c.markup?Math.round(c.price):0,touched:false};S.view='sell';scrollTo(0,0);
   }
+  else if(act==='contract'&&v&&v.sale&&saleCashBlock(v)){toast('Kontrata nuk nxirret: '+saleCashBlock(v)+' Ktheje mjetin në stok dhe shite përsëri me bankë ose kartë.');return}
   else if(act==='contract'&&v&&v.sale){if(!v.sale.contract_no){v.sale.contract_no=nextContractNo(String(v.sale.date||today()).slice(0,4),v);save(v)}S.view='contract';scrollTo(0,0)}
   else if(act==='cback'){S.view='detail';S.confirmUnsell=false}
   else if(act==='cpdf'){downloadContract(true);return}
@@ -1359,6 +1381,7 @@ document.addEventListener('click',e=>{
     const pc=num(S.sale.price),eur=S.sale.cur==='EUR',rate=num(S.sale.rate);if(!pc){toast('Shkruaj çmimin e shitjes.');return}
     if(eur&&!(rate>0)){toast('Shkruaj kursin e euros.');return}
     const price=eur?Math.round(pc*rate*100)/100:pc;
+    {const m=cashBlock(price,!!S.sale.is_nipt,S.sale.pay);if(m){toast(m);sellPayWarn();const w=$('#pay-warn');if(w)w.scrollIntoView({block:'center'});return}}
     v.status='sold';v.sale={buyer:String(S.sale.buyer||'').trim(),buyer_id:String(S.sale.buyer_id||'').trim().toUpperCase(),buyer_is_nipt:!!S.sale.is_nipt,address:String(S.sale.address||'').trim(),city:String(S.sale.city||'').trim(),date:S.sale.date||today(),price};
     if(fiscalOn())v.sale.pay=PAY_NAME[S.sale.pay]?S.sale.pay:'CASH';
     if(eur){v.sale.cur='EUR';v.sale.rate=rate;if(num(S.settings.eur_rate)!==rate){S.settings.eur_rate=rate;saveSettings()}}
@@ -1526,9 +1549,24 @@ async function fiscalPdf(v){
     const r=await fiscalCall({action:'pdf',vehicle_id:v.id});
     if(!r.base64)throw {code:'no_pdf'};
     const bin=atob(r.base64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-    await saveFile(new Blob([u],{type:'application/pdf'}),'Fatura '+String(v.sale.fiscal.number||v.vin||'').replace(/[^A-Za-z0-9_-]+/g,'-')+'.pdf');
+    closePdf();const blob=new Blob([u],{type:'application/pdf'});S.pdfDoc={blob,url:URL.createObjectURL(blob),name:'Fatura '+String(v.sale.fiscal.number||v.vin||'').replace(/[^A-Za-z0-9_-]+/g,'-')+'.pdf',title:'Fatura '+(v.sale.fiscal.number||'')};
+    S.pdfBusy=null;if(S.id===v.id&&S.view==='detail'){S.view='pdf';scrollTo(0,0)}render();return;
   }catch(e){S.fiscErr={key:v.id,msg:'Fatura nuk u mor: '+(e&&e.error?e.error:FISC_ERR[e&&e.code]||FISC_ERR.upstream_error)}}
   S.pdfBusy=null;if(S.view==='detail')render();
+}
+/* Kufiri ligjor i pagesave me para në dorë (ligji nr. 9920/2008 "Për procedurat tatimore", neni 59, i ndryshuar me ligjin nr. 79/2025):
+   deri 500 000 lekë me një individ, deri 100 000 lekë mes bizneseve. Vlera merret me TVSH. Zbatohet vetëm kur fiskalizimi është i ndezur,
+   sepse vetëm atëherë programi e di mënyrën e pagesës. */
+const CASH_MAX={ind:500000,biz:100000};
+function cashBlock(netLek,isNipt,pay){
+  if(!fiscalOn()||(pay||'CASH')!=='CASH')return '';
+  const gross=num(netLek)*(1+VAT_SALE),lim=isNipt?CASH_MAX.biz:CASH_MAX.ind;
+  return gross>lim?`Shitja me TVSH është ${lek(gross)}. Me para në dorë lejohet deri në ${lek(lim)} ${isNipt?'mes bizneseve':'për një individ'} (ligji për procedurat tatimore, neni 59). Zgjidh Bankë ose Kartë.`:'';
+}
+const saleCashBlock=v=>v&&v.sale&&!fiscDone(v)?cashBlock(v.sale.price,v.sale.buyer_is_nipt,v.sale.pay):'';
+function sellPayWarn(){
+  const w=$('#pay-warn'),x=S.sale;if(!w||!x)return;
+  const pc=num(x.price),m=cashBlock(x.cur==='EUR'?pc*num(x.rate):pc,x.is_nipt,x.pay);w.textContent=m;w.hidden=!m;
 }
 const fiscAuto=v=>fiscDone(v)&&v.sale.fiscal.provider==='easypos'; // anulimi nga programi punon vetëm me easyPos
 const fiscDone=v=>!!(v&&v.sale&&v.sale.fiscal&&v.sale.fiscal.status==='ok'&&v.sale.fiscal.iic);
