@@ -520,7 +520,7 @@ function viewDetail(){
       <div class="total"><span>Fitimi</span><span style="color:var(${c.profit>=0?'--good':'--bad'})">${lek(c.profit)}${c.cost?` · ${fmt(c.profit/c.cost*100,1)}%`:''}</span></div></div>
       ${fiscalBlock(v)}
       ${S.confirmUnsell?`<div class="row end"><span class="small" style="flex:1 1 200px">${fiscAuto(v)?`Kjo shitje është e fiskalizuar. Fatura <b>${esc(v.sale.fiscal.number||'')}</b> do të anulohet edhe te tatimet me një faturë korrigjuese, pastaj mjeti kthehet në stok. Anulimi nuk kthehet më.`:fiscDone(v)?`Kjo shitje është e fiskalizuar te ${FISC_NAME[v.sale.fiscal.provider]||'ofruesi'}, dhe programi nuk e anulon dot atë faturë. Anuloje më parë atje. Ta kthej mjetin në stok?`:'Jeni i sigurt që doni ta anuloni këtë shitje? Mjeti kthehet në stok dhe të dhënat e blerësit fshihen.'}</span><button class="btn danger" data-act="unsell2" ${S.cancelBusy===v.id?'disabled':''}>${S.cancelBusy===v.id?'Po anulohet…':fiscAuto(v)?'Po, anulo faturën dhe shitjen':fiscDone(v)?'Po, e anulova; ktheje në stok':'Po, anuloje shitjen'}</button><button class="btn" data-act="unsellno" ${S.cancelBusy===v.id?'disabled':''}>Jo</button></div>`
-      :`<div class="row end"><button class="btn" data-act="unsell">Kthe në stok</button><button class="btn primary" data-act="contract">Kontrata</button></div>`}</div>`
+      :`<div class="row end"><button class="btn" data-act="unsell">Kthe në stok</button>${fiscalOn()?invoiceBtn(v):''}<button class="btn primary" data-act="contract">Kontrata</button></div>`}</div>`
    :`${cancelledHtml(v)}<button class="btn primary" data-act="sellview" style="padding:14px;font-size:16px">Shitje</button>`;
   return `<div class="top"><button class="btn ghost" data-act="back">‹ Lista</button><span class="pill ${c.sold?'sold':'stock'}">${c.sold?'Shitur':'Në stok'}</span></div>
   <div><h2 style="font-size:24px">${esc(v.make_model||'Mjet pa emër')} ${esc(v.year||'')}</h2><div class="mono muted">${esc(v.vin||'pa VIN')}</div></div>
@@ -1243,6 +1243,7 @@ document.addEventListener('click',e=>{
     const k=b.dataset.v;S.fiscBusy=k;S.fiscErr=null;render();
     fiscalCall({action:'disconnect',nipt_key:k}).then(()=>{S.fiscBusy=null;return loadFiscal()}).catch(e=>{S.fiscBusy=null;S.fiscErr={key:k,msg:FISC_ERR[e.code]||FISC_ERR.upstream_error};render()});
     return}
+  if(act==='fiscpdf'){const t=S.vehicles.find(x=>x.id===S.id);if(t&&fiscDone(t))fiscalPdf(t);return}
   if(act==='fiscalize'){
     const t=S.vehicles.find(x=>x.id===S.id);if(!t||!t.sale||S.fiscBusy)return;
     if(subExpired()){toast(roMsg());return}
@@ -1481,7 +1482,7 @@ const fiscalOn=()=>!!(SB&&FISCAL_ON&&S.settings&&S.settings.fiscal_on===true);
 const FISC_NAME={easypos:'easyPos',fature:'fature.al'},PAY_NAME={CASH:'Para në dorë',BANK:'Bankë',CARD:'Kartë'};
 const FISC_ERR={bad_token:'Tokeni nuk u pranua nga ofruesi. Kontrollo që është i mjedisit të provës dhe i kopjuar i plotë.',bad_operator:'Kodi i operatorit ka formën ab123cd456.',
   nipt_mismatch:'Ky token i përket një NIPT-i tjetër.',unknown_nipt:'Ky NIPT nuk është në llogari.',provider_error:'Ofruesi nuk u përgjigj si duhet. Provo përsëri pas pak.',
-  no_connection:'Ky NIPT nuk është lidhur me një ofrues fiskalizimi. Lidhe te Settings.',expired:'Abonimi ka skaduar.',not_sold:'Mjeti nuk është i shitur.',not_fiscalized:'Kjo shitje nuk ka faturë të fiskalizuar për t\'u anuluar.',incomplete_sale:'Shitjes i mungon çmimi ose blerësi.',
+  no_connection:'Ky NIPT nuk është lidhur me një ofrues fiskalizimi. Lidhe te Settings.',expired:'Abonimi ka skaduar.',not_sold:'Mjeti nuk është i shitur.',no_pdf:'Ofruesi nuk e ktheu PDF-në e faturës. Provo përsëri pas pak.',not_fiscalized:'Kjo shitje nuk ka faturë të fiskalizuar për t\'u anuluar.',incomplete_sale:'Shitjes i mungon çmimi ose blerësi.',
   live_disabled:'Mjedisi real nuk është hapur ende.',forbidden:'Hyr përsëri në llogari.',upstream_error:'Serveri nuk u arrit. Provo përsëri.'};
 async function fiscalCall(body){
   if(S.viewAs){toast(VIEW_RO);throw {code:'forbidden'}}
@@ -1511,6 +1512,24 @@ function fiscalCard(c){
     <div class="row end"><button class="btn primary" data-act="fiscon" data-v="${k}" ${busy?'disabled':''}>${busy?'Po kontrollohet…':'Lidhe'}</button></div></div>`;
 }
 // Blloku i fiskalizimit te mjeti i shitur.
+// Fatura e fiskalizuar si PDF: fature.al jep një lidhje gati; te easyPos PDF-ja merret nga serveri sa herë kërkohet.
+function invoiceBtn(v){
+  if(!fiscDone(v))return '';
+  const f=v.sale.fiscal;
+  if(/^https:\/\//.test(f.pdf||''))return `<a class="btn" href="${esc(f.pdf)}" target="_blank" rel="noopener">Fatura</a>`;
+  if(f.provider!=='easypos')return '';
+  return `<button class="btn" data-act="fiscpdf" ${S.pdfBusy===v.id?'disabled':''}>${S.pdfBusy===v.id?'Po merret…':'Fatura'}</button>`;
+}
+async function fiscalPdf(v){
+  if(S.pdfBusy)return;S.pdfBusy=v.id;S.fiscErr=null;render();
+  try{
+    const r=await fiscalCall({action:'pdf',vehicle_id:v.id});
+    if(!r.base64)throw {code:'no_pdf'};
+    const bin=atob(r.base64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    await saveFile(new Blob([u],{type:'application/pdf'}),'Fatura '+String(v.sale.fiscal.number||v.vin||'').replace(/[^A-Za-z0-9_-]+/g,'-')+'.pdf');
+  }catch(e){S.fiscErr={key:v.id,msg:'Fatura nuk u mor: '+(e&&e.error?e.error:FISC_ERR[e&&e.code]||FISC_ERR.upstream_error)}}
+  S.pdfBusy=null;if(S.view==='detail')render();
+}
 const fiscAuto=v=>fiscDone(v)&&v.sale.fiscal.provider==='easypos'; // anulimi nga programi punon vetëm me easyPos
 const fiscDone=v=>!!(v&&v.sale&&v.sale.fiscal&&v.sale.fiscal.status==='ok'&&v.sale.fiscal.iic);
 // Faturat e anuluara të një mjeti (shitje të fiskalizuara që u kthyen në stok): mbahen për gjurmë.
@@ -1532,7 +1551,7 @@ function fiscalBlock(v){
       <div><span>NIVF</span><span class="mono" style="white-space:normal;word-break:break-all">${esc(f.fic)}</span></div></div>
     ${f.warning?`<div class="small" style="color:var(--bad)">${esc(f.warning)}</div>`:''}
     ${S.fiscErr&&S.fiscErr.key===v.id?`<div class="small" style="color:var(--bad)">${esc(S.fiscErr.msg)}</div>`:''}
-    <div class="row" style="justify-content:space-between"><span class="pill ok">E fiskalizuar</span><span class="row">${/^https:\/\//.test(f.link||'')?`<a class="btn" href="${esc(f.link)}" target="_blank" rel="noopener" style="padding:6px 10px;font-size:13px">Verifiko te tatimet</a>`:''}${/^https:\/\//.test(f.pdf||'')?`<a class="btn" href="${esc(f.pdf)}" target="_blank" rel="noopener" style="padding:6px 10px;font-size:13px">Fatura PDF</a>`:''}</span></div>`;
+    <div class="row" style="justify-content:space-between"><span class="pill ok">E fiskalizuar</span><span class="row">${/^https:\/\//.test(f.link||'')?`<a class="btn" href="${esc(f.link)}" target="_blank" rel="noopener" style="padding:6px 10px;font-size:13px">Verifiko te tatimet</a>`:''}</span></div>`;
   return `<div class="kv" style="margin-top:10px">${pay}</div>
     ${f&&f.error?`<div class="small" style="color:var(${f.status==='pending'?'--warn':'--bad'})">${f.status==='pending'?'Në pritje: ':'Fiskalizimi dështoi: '}${esc(f.error)}</div>`:''}
     ${S.fiscErr&&S.fiscErr.key===v.id?`<div class="small" style="color:var(--bad)">${esc(S.fiscErr.msg)}</div>`:''}
