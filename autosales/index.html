@@ -725,10 +725,12 @@ function viewCompany(){
   ${own.map(coCard).join('')}
   ${addCard}
   ${SB&&FISCAL_ON?`<div class="card"><h3>Fiskalizimi</h3>
-    <label class="check"><input type="checkbox" id="fisc-on" ${S.settings.fiscal_on===true?'checked':''}><span>Fiskalizo shitjet nga ky program</span></label>
-    <div class="small muted" style="margin-top:8px">${S.settings.fiscal_on===true
-      ?`Te karta e çdo NIPT-i më lart doli pjesa “Fiskalizimi”, ku lidhet programi i fiskalizimit (easyPos ose fature.al). Te shitja zgjidhet mënyra e pagesës dhe te mjeti i shitur del butoni “Fiskalizo”.`
-      :`Lëre të fikur nëse faturat i lëshon me një program tjetër. Kur ndizet, te çdo NIPT dalin të dhënat që kërkon fiskalizimi.`}</div></div>`:''}
+    ${S.settings.fiscal_on===true?`<label class="check"><input type="checkbox" id="fisc-on" checked><span>Fiskalizo shitjet nga ky program</span></label>
+    <div class="small muted" style="margin-top:8px">Te karta e çdo NIPT-i më lart doli pjesa “Fiskalizimi”, ku lidhet programi i fiskalizimit (easyPos ose fature.al). Te shitja zgjidhet mënyra e pagesës dhe te mjeti i shitur del butoni “Fiskalizo”. Nëse e fik, për ta ndezur përsëri duhet kodi i aktivizimit.</div>`
+    :`<div class="small muted" style="margin-bottom:10px">Fiskalizimi i shitjeve nga ky program ndizet me kod aktivizimi. Kodin e merr nga ${SUB_CONTACT}. Pa të programi punon si zakonisht: shitja, kontrata dhe raportet.</div>
+    <div class="row" style="align-items:flex-end"><div class="field" style="flex:1 1 160px"><label for="fisc-code">Kodi i aktivizimit</label><input id="fisc-code" type="text" inputmode="numeric" autocomplete="off" maxlength="20" spellcheck="false" style="font-family:var(--mono);letter-spacing:.12em"></div>
+      <button class="btn primary" data-act="fiscunlock" ${S.unlockBusy?'disabled':''}>${S.unlockBusy?'Po kontrollohet…':'Aktivizo fiskalizimin'}</button></div>
+    ${S.unlockErr?`<div class="small" role="alert" style="color:var(--bad);margin-top:8px">${esc(S.unlockErr)}</div>`:''}`}</div>`:''}
   <div class="card"><h3>Kursi i këmbimit</h3>${S.boa&&S.boa.rates?`<div class="kv">${['EUR','USD','GBP','CHF'].filter(k=>num(S.boa.rates[k])>0).map(k=>`<div><span>1 ${k}</span><span>${fmt(num(S.boa.rates[k]),2)} L</span></div>`).join('')}</div>
     <div class="small ${boaAge()>5?'':'muted'}" ${boaAge()>5?'style="color:var(--bad)"':''}>Kursi zyrtar i Bankës së Shqipërisë, datë ${dmy(S.boa.date)}${S.boa.time?' ora '+esc(String(S.boa.time).slice(0,5)):''}.${boaAge()>5?' Është më i vjetër se 5 ditë, ndaj nuk përdoret te shitjet.':' Përdoret te shitjet në euro.'}</div>`
     :'<div class="small muted">Kursi i Bankës së Shqipërisë nuk është ngarkuar ende. Te shitja në euro kursi shkruhet me dorë.</div>'}</div>`
@@ -1263,6 +1265,19 @@ document.addEventListener('click',e=>{
   if(act==='pdfback'){closePdf();S.view='detail';render();return}
   if(act==='pdfshare'&&S.pdfDoc){try{const f=new File([S.pdfDoc.blob],S.pdfDoc.name,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:S.pdfDoc.title}).catch(()=>{});else toast('Ky telefon nuk e dërgon dot skedarin; shkarkoje.')}catch(x){toast('Dërgimi nuk u hap; shkarkoje.')}return}
   if(act==='pdfprint'){const f=$('#pdfframe');try{f.contentWindow.focus();f.contentWindow.print()}catch(x){if(S.pdfDoc)window.open(S.pdfDoc.url,'_blank','noopener')}return}
+  if(act==='fiscunlock'){
+    if(S.unlockBusy||!SB)return;if(S.viewAs){toast(VIEW_RO);return}
+    const code=(($('#fisc-code')||{}).value||'').trim();if(!code){S.unlockErr='Shkruaj kodin e aktivizimit.';render();const i=$('#fisc-code');if(i)i.focus();return}
+    S.unlockBusy=true;S.unlockErr='';render();
+    SB.rpc('fiscal_unlock',{p_code:code}).then(({data,error})=>{
+      S.unlockBusy=false;
+      if(error||!data)S.unlockErr='Kodi nuk u kontrollua dot. Kontrollo internetin dhe provo përsëri.';
+      else if(data.ok){S.settings.fiscal_on=true;loadFiscal();toast('Fiskalizimi u aktivizua.')}
+      else if(data.wait)S.unlockErr='Shumë prova me kod të gabuar. Provo përsëri pas një ore.';
+      else S.unlockErr='Kodi nuk është i saktë.'+(data.left>0?' Të mbeten '+data.left+(data.left===1?' provë.':' prova.'):' Provo përsëri pas një ore.');
+      if(S.view==='company'){render();if(S.unlockErr){const i=$('#fisc-code');if(i)i.focus()}}
+    });
+    return}
   if(act==='fiscpdf'){const t=S.vehicles.find(x=>x.id===S.id);if(t&&fiscDone(t))fiscalPdf(t);return}
   if(act==='fiscalize'){
     const t=S.vehicles.find(x=>x.id===S.id);if(!t||!t.sale||S.fiscBusy)return;
@@ -1471,7 +1486,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
   if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
   if(t.id==='scanfile'){const f=t.files;if(f&&f.length)runScan(f);return}
-  if(t.id==='fisc-on'){S.settings.fiscal_on=t.checked;saveSettings();if(t.checked)loadFiscal();render();return}
+  if(t.id==='fisc-on'){if(t.checked){t.checked=false;return}S.settings.fiscal_on=false;S.unlockErr='';saveSettings();render();return} // kutia vetëm e fik; ndezja bëhet me kod (fiscal_unlock)
   if(t.id==='impxlsfile'){if(t.files&&t.files[0])impExcel(t.files[0]);return}
   if(t.id==='impscanfile'){if(t.files&&t.files.length)impScan(t.files);return}
   if(t.dataset.p&&S.view==='detail'){
