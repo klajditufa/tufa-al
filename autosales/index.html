@@ -520,7 +520,7 @@ function viewDetail(){
       <div><span>Kosto e mjetit</span><span>${lek(c.cost)}</span></div>
       <div class="total"><span>Fitimi</span><span style="color:var(${c.profit>=0?'--good':'--bad'})">${lek(c.profit)}${c.cost?` · ${fmt(c.profit/c.cost*100,1)}%`:''}</span></div></div>
       ${fiscalBlock(v)}
-      ${S.confirmUnsell?`<div class="row end"><span class="small" style="flex:1 1 200px">${fiscAuto(v)?`Kjo shitje është e fiskalizuar. Fatura <b>${esc(v.sale.fiscal.number||'')}</b> do të anulohet edhe te tatimet me një faturë korrigjuese, pastaj mjeti kthehet në stok. Anulimi nuk kthehet më.`:fiscDone(v)?`Kjo shitje është e fiskalizuar te ${FISC_NAME[v.sale.fiscal.provider]||'ofruesi'}, dhe programi nuk e anulon dot atë faturë. Anuloje më parë atje. Ta kthej mjetin në stok?`:'Jeni i sigurt që doni ta anuloni këtë shitje? Mjeti kthehet në stok dhe të dhënat e blerësit fshihen.'}</span><button class="btn danger" data-act="unsell2" ${S.cancelBusy===v.id?'disabled':''}>${S.cancelBusy===v.id?'Po anulohet…':fiscAuto(v)?'Po, anulo faturën dhe shitjen':fiscDone(v)?'Po, e anulova; ktheje në stok':'Po, anuloje shitjen'}</button><button class="btn" data-act="unsellno" ${S.cancelBusy===v.id?'disabled':''}>Jo</button></div>`
+      ${S.confirmUnsell?`<div class="row end"><span class="small" style="flex:1 1 200px">${fiscAuto(v)?`Kjo shitje është e fiskalizuar. Fatura <b>${esc(v.sale.fiscal.number||'')}</b> do të anulohet edhe te tatimet me një faturë korrigjuese, pastaj mjeti kthehet në stok. Anulimi nuk kthehet më.`:fiscDone(v)?`Kjo shitje është e fiskalizuar te ${FISC_NAME[v.sale.fiscal.provider]||'ofruesi'}, dhe programi nuk e anulon dot atë faturë. Anuloje më parë atje. Ta kthej mjetin në stok?`:'Jeni i sigurt që doni ta anuloni këtë shitje? Mjeti kthehet në stok dhe të dhënat e blerësit fshihen.'}</span><button class="btn danger" data-act="unsell2" ${S.cancelBusy===v.id?'disabled':''}>${S.cancelBusy===v.id?'Po anulohet…':fiscAuto(v)?'Po, anulo faturën dhe shitjen':fiscDone(v)?'Po, e anulova; ktheje në stok':'Po, anuloje shitjen'}</button><button class="btn" data-act="unsellno" ${S.cancelBusy===v.id?'disabled':''}>Jo</button></div>${S.cancelFail===v.id?`<div class="row end"><span class="small muted" style="flex:1 1 200px">Nëse fatura është anuluar tashmë te fature.al, mund ta kthesh mjetin në stok pa e anuluar përsëri.</span><button class="btn" data-act="unsellman">E anulova atje; ktheje në stok</button></div>`:''}`
       :`<div class="row end"><button class="btn" data-act="unsell">Kthe në stok</button>${fiscalOn()?invoiceBtn(v):''}<button class="btn primary" data-act="contract">Kontrata</button></div>`}</div>`
    :`${cancelledHtml(v)}<button class="btn primary" data-act="sellview" style="padding:14px;font-size:16px">Shitje</button>`;
   return `<div class="top"><button class="btn ghost" data-act="back">‹ Lista</button><span class="pill ${c.sold?'sold':'stock'}">${c.sold?'Shitur':'Në stok'}</span></div>
@@ -1390,7 +1390,7 @@ document.addEventListener('click',e=>{
   }
   else if(act==='unsell'){
     if(v&&v.sale&&v.sale.fiscal&&!fiscDone(v)&&v.sale.fiscal.iic){toast('Fatura është ende në pritje te ofruesi. Shtyp “Kontrollo përsëri” që të mbyllet, pastaj anuloje.');return}
-    S.confirmUnsell=true}
+    S.confirmUnsell=true;S.cancelFail=null}
   else if(act==='unsellno'){S.confirmUnsell=false}
   else if(act==='unsell2'&&v&&fiscAuto(v)){
     // Shitje e fiskalizuar: më parë anulohet fatura te ofruesi (faturë korrigjuese), dhe vetëm kur ajo mbyllet mjeti kthehet në stok.
@@ -1402,12 +1402,12 @@ document.addEventListener('click',e=>{
         if(c.status==='ok'){
           const sl=cur.sale;cur.cancelled=(cur.cancelled||[]).concat({buyer:sl.buyer,date:sl.date,price:sl.price,contract_no:sl.contract_no||'',number:sl.fiscal.number||'',iic:sl.fiscal.iic,provider:sl.fiscal.provider,env:sl.fiscal.env,cancel:c});
           cur.status='stock';delete cur.sale;S.confirmUnsell=false;save(cur);toast('Fatura u anulua te tatimet dhe mjeti u kthye në stok.')}
-        else{cur.sale.fiscal.cancel=c;save(cur);S.fiscErr={key:cur.id,msg:(c.status==='pending'?'Anulimi është në pritje: ':'Anulimi dështoi: ')+(c.error||'')+' Mjeti mbetet i shitur; provo përsëri.'}}
+        else{cur.sale.fiscal.cancel=c;save(cur);if(c.status==='error'&&cur.sale.fiscal.provider==='fature')S.cancelFail=cur.id;S.fiscErr={key:cur.id,msg:(c.status==='pending'?'Anulimi është në pritje: ':'Anulimi dështoi: ')+(c.error||'')+' Mjeti mbetet i shitur; provo përsëri.'}}
       }
       if(S.view==='detail')render();
     }).catch(e=>{S.cancelBusy=null;S.fiscErr={key:v.id,msg:'Anulimi dështoi: '+(FISC_ERR[e.code]||FISC_ERR.upstream_error)+' Mjeti mbetet i shitur.'};if(S.view==='detail')render()});
     return}
-  else if(act==='unsell2'&&v){if(fiscDone(v)){const sl=v.sale;v.cancelled=(v.cancelled||[]).concat({buyer:sl.buyer,date:sl.date,price:sl.price,contract_no:sl.contract_no||'',number:sl.fiscal.number||'',iic:sl.fiscal.iic,provider:sl.fiscal.provider,env:sl.fiscal.env,cancel:{manual:true,at:new Date().toISOString()}})}
+  else if((act==='unsell2'||(act==='unsellman'&&S.cancelFail===v.id))&&v){S.cancelFail=null;if(fiscDone(v)){const sl=v.sale;v.cancelled=(v.cancelled||[]).concat({buyer:sl.buyer,date:sl.date,price:sl.price,contract_no:sl.contract_no||'',number:sl.fiscal.number||'',iic:sl.fiscal.iic,provider:sl.fiscal.provider,env:sl.fiscal.env,cancel:{manual:true,at:new Date().toISOString()}})}
     v.status='stock';delete v.sale;S.confirmUnsell=false;save(v)}
   render();if(S.view==='detail')updatePricingOut();
   if(act.startsWith('cal')){const f=S.cal.open?$('#cal .sel')||$('#cal .today')||$('#cal button'):$('#s-date');if(f)f.focus()}
@@ -1568,7 +1568,7 @@ function sellPayWarn(){
   const w=$('#pay-warn'),x=S.sale;if(!w||!x)return;
   const pc=num(x.price),m=cashBlock(x.cur==='EUR'?pc*num(x.rate):pc,x.is_nipt,x.pay);w.textContent=m;w.hidden=!m;
 }
-const fiscAuto=v=>fiscDone(v)&&v.sale.fiscal.provider==='easypos'; // anulimi nga programi punon vetëm me easyPos
+const fiscAuto=v=>fiscDone(v)&&(v.sale.fiscal.provider==='easypos'||v.sale.fiscal.provider==='fature'); // anulimi bëhet nga programi te të dy ofruesit
 const fiscDone=v=>!!(v&&v.sale&&v.sale.fiscal&&v.sale.fiscal.status==='ok'&&v.sale.fiscal.iic);
 // Faturat e anuluara të një mjeti (shitje të fiskalizuara që u kthyen në stok): mbahen për gjurmë.
 function cancelledHtml(v){
