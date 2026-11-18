@@ -232,8 +232,15 @@ const LSS='autosales.settings';
 function saveSettings(){
   if(S.viewAs){toast(VIEW_RO);return}
   const data={default_pct:S.settings.default_pct===''?'':num(S.settings.default_pct),eur_rate:num(S.settings.eur_rate)||'',company:S.settings.company||'',nipts:ownKeys(),fiscal_on:S.settings.fiscal_on===true,sellers:JSON.parse(JSON.stringify(S.settings.sellers||{}))};
-  if(S.db)S.db.doc('settings/main').set(data).catch(()=>toast('Ruajtja e Marzhit të Fitimit dështoi.'));
-  else{try{localStorage.setItem(LSS,JSON.stringify(data))}catch(e){}}
+  if(S.db){const p=S.db.doc('settings/main').set(data);p.catch(()=>{if(!S.coBusy)toast('Ruajtja te Settings dështoi. Kontrollo internetin dhe provo përsëri.')});return p}
+  try{localStorage.setItem(LSS,JSON.stringify(data))}catch(e){}
+  return Promise.resolve();
+}
+// Numri i telefonit në një formë të vetme: 00355… dhe 06… bëhen +355…; çdo gjë tjetër mbetet siç është shkruar.
+function normPhone(x){
+  const t=String(x||'').trim();if(!t)return '';let d=t.replace(/[\s().\-\/]/g,'');
+  if(/^00\d{8,}$/.test(d))d='+'+d.slice(2);else if(/^355\d{8,9}$/.test(d))d='+'+d;else if(/^0[4-6]\d{7,8}$/.test(d))d='+355'+d.slice(1);
+  return /^\+\d{8,15}$/.test(d)?d:t;
 }
 const typing=()=>{const a=document.activeElement;return !!a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)};
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',4000)}
@@ -699,19 +706,21 @@ function mainCompany(){return ownCompanies()[0]}
 function viewCompany(){
   const c=mainCompany();
   if(S.onboard&&!c)return `<div class="top"><h1>Mirë se erdhe</h1><span class="row"><button class="btn ghost" data-act="logout">Dil</button></span></div>
-  <div class="small muted">Para se të fillosh, plotëso të dhënat e kompanisë. Dalin në kokën e kontratës së shitjes dhe mund t'i ndryshosh më vonë te Settings.</div>
+  <div class="card small" style="border-color:var(--good);color:var(--good);font-weight:600">✓ Llogaria u krijua me sukses${S.userMail?' për '+esc(S.userMail):''}. Nuk ke nevojë të regjistrohesh përsëri.</div>
+  <div class="small muted">Hapi i fundit, vetëm këtë herë: të dhënat e kompanisë. Dalin në kokën e kontratës së shitjes dhe mund t'i ndryshosh më vonë te Settings.</div>
   <div class="card"><h3>Kompania</h3><div class="grid2">
     <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="organization" placeholder="p.sh. AUTO SHPK"></div>
     <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="L12345678A" style="text-transform:uppercase"></div>
     <div class="field wide"><label for="co-new-address">Adresa</label><input id="co-new-address" type="text" autocomplete="street-address" placeholder="Rruga, qyteti"></div>
-    <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="(+355) 6X XXX XXXX"></div></div>
-    <div class="row end"><button class="btn primary" data-act="coadd">Ruaj dhe vazhdo</button></div></div>`;
+    <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="+355 6X XXX XXXX ose 06X XXX XXXX"></div></div>
+    ${S.coErr?`<div class="small" role="alert" style="color:var(--bad);font-weight:600;margin-top:10px">${esc(S.coErr)}</div>`:''}
+    <div class="row end"><button class="btn primary" data-act="coadd" ${S.coBusy?'disabled':''}>${S.coBusy?'Po ruhet…':'Ruaj dhe hap programin'}</button></div></div>`;
   const own=ownCompanies(),price=n=>fmt(n,0)+' L';
   const f=(c,k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${esc(c.key)}-${k}">${label}</label><input id="co-${esc(c.key)}-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
   const coCard=(c,i)=>`<div class="card">${own.length>1||i?`<h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${i?'NIPT shtesë '+i:'Kompania kryesore'}</span>
       ${i?(S.coDel===c.key?`<span class="row"><button class="btn sm danger" data-act="codel" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px;color:var(--bad)">Po, hiqe</button><button class="btn" data-act="codelno" style="padding:5px 9px;font-size:12.5px">Jo</button></span>`
         :`<button class="btn ghost" data-act="codelask" data-v="${esc(c.key)}" style="padding:5px 9px;font-size:12.5px">Hiq</button>`):''}</h3>`:''}
-    <div class="grid2">${f(c,'name','Emri i kompanisë')}${f(c,'nipt','NIPT')}${f(c,'slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f(c,'address','Adresa')}${f(c,'phone','Telefoni','(+355) 6X XXX XXXX')}${f(c,'email','Email')}</div>${banksHtml(c)}${fiscalCard(c)}</div>`;
+    <div class="grid2">${f(c,'name','Emri i kompanisë')}${f(c,'nipt','NIPT')}${f(c,'slogan','Slogani (del nën emrin te kontrata)','p.sh. Import dhe shitje automjetesh')}${f(c,'address','Adresa')}${f(c,'phone','Telefoni','+355 6X XXX XXXX')}${f(c,'email','Email')}</div>${banksHtml(c)}${fiscalCard(c)}</div>`;
   const addCard=own.length>=MAX_NIPTS?`<div class="small muted">Llogaria ka ${MAX_NIPTS} NIPT-e, që është kufiri.</div>`
     :`<div class="card"><h3>Shto një NIPT tjetër</h3>
     <div class="small muted" style="margin-bottom:10px">Për bizneset me disa NIPT-e: të gjitha menaxhohen nga kjo llogari, veç e veç ose në total. ${SB?`Çdo NIPT shtesë kushton ${price(6000)} në vit. `:''}Deri në ${MAX_NIPTS} NIPT-e.</div>
@@ -1324,14 +1333,23 @@ document.addEventListener('click',e=>{
   if(act==='company'){S.view='company';S.pwErr='';S.pwMsg='';scrollTo(0,0)}
   else if(act==='coadd'){
     const name=$('#co-new-name').value.trim(),nipt=$('#co-new-nipt').value.trim().toUpperCase();
-    const adr=$('#co-new-address'),tel=$('#co-new-phone'),address=adr?adr.value.trim():'',phone=tel?tel.value.trim():'';
-    if(!name||!nipt){toast('Shkruaj emrin dhe NIPT-in e kompanisë.');return}
-    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt)){toast('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).');return}
-    if(adr&&!address){toast('Shkruaj adresën e kompanisë.');return}
+    const adr=$('#co-new-address'),tel=$('#co-new-phone'),address=adr?adr.value.trim():'',phone=tel?normPhone(tel.value):'';
+    if(S.coBusy)return;
+    // Gabimi del me shkrim poshtë fushave (jo vetëm si njoftim që zhduket), dhe fushat e plotësuara nuk preken.
+    const bad=(m,id)=>{S.coErr=m;toast(m);const e=document.querySelector('[role=alert]');if(S.onboard&&!e){const vals=['name','nipt','address','phone'].map(x=>($('#co-new-'+x)||{}).value);render();['name','nipt','address','phone'].forEach((x,i)=>{const el=$('#co-new-'+x);if(el&&vals[i]!=null)el.value=vals[i]})}else if(e)e.textContent=m;const f=$('#'+id);if(f)f.focus()};
+    if(!name)return bad('Shkruaj emrin e kompanisë.','co-new-name');
+    if(!nipt)return bad('Shkruaj NIPT-in e kompanisë.','co-new-nipt');
+    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt))return bad('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).','co-new-nipt');
+    if(adr&&!address)return bad('Shkruaj adresën e kompanisë.','co-new-address');
     const k=sellerKey({importer_nipt:nipt});S.settings.sellers=S.settings.sellers||{};
     if(ownKeys().length){toast('Kompania është vendosur tashmë.');return}
-    S.settings.sellers[k]=Object.assign({name,nipt},address?{address}:{},phone?{phone}:{});S.settings.company=k;saveSettings();
-    if(S.onboard){S.onboard=false;S.view='list'}
+    S.settings.sellers[k]=Object.assign({name,nipt},address?{address}:{},phone?{phone}:{});S.settings.company=k;S.coErr='';
+    if(!S.onboard){saveSettings();render();return}
+    // Hapi i parë: programi hapet vetëm pasi të dhënat janë ruajtur vërtet në server; përndryshe forma do të dilte përsëri herën tjetër.
+    S.coBusy=true;const btn=b;btn.disabled=true;btn.textContent='Po ruhet…';
+    saveSettings().then(()=>{S.coBusy=false;S.onboard=false;S.view='list';render();scrollTo(0,0);toast('Të dhënat u ruajtën. Mirë se erdhe!')})
+      .catch(()=>{S.coBusy=false;delete S.settings.sellers[k];S.settings.company='';btn.disabled=false;btn.textContent='Ruaj dhe hap programin';bad('Të dhënat nuk u ruajtën. Kontrollo internetin dhe shtyp përsëri “Ruaj dhe hap programin”.','co-new-name')});
+    return;
   }
   if(act==='qclear'){S.q='';const q=$('#q');q.value='';b.hidden=true;updateList();q.focus();return}
   if(act==='tab'){S.tab=b.dataset.v}
@@ -1439,6 +1457,7 @@ document.addEventListener('input',e=>{
   }else if(t.dataset.std!==undefined&&S.view==='list'){S.settings.default_pct=t.value.trim()===''?'':num(t.value);updateList();
   }else if(t.dataset.co&&S.view==='company'){
     S.settings.sellers=S.settings.sellers||{};const k=t.dataset.co,cur=companies().find(c=>c.key===k)||{};
+    if(t.dataset.k==='phone')t.value=normPhone(t.value);
     S.settings.sellers[k]=Object.assign({name:cur.name||'',nipt:cur.nipt||''},S.settings.sellers[k],{[t.dataset.k]:t.value.trim()});
   }else if(t.dataset.sel&&S.view==='contract'){
     const v=S.vehicles.find(x=>x.id===S.id);if(!v)return;
@@ -1486,6 +1505,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
   if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
   if(t.id==='scanfile'){const f=t.files;if(f&&f.length)runScan(f);return}
+  if(t.id==='l-show'){document.querySelectorAll('#l-pass,#l-pass2').forEach(x=>x.type=t.checked?'text':'password');return}
   if(t.id==='fisc-on'){if(t.checked){t.checked=false;return}S.settings.fiscal_on=false;S.unlockErr='';saveSettings();render();return} // kutia vetëm e fik; ndezja bëhet me kod (fiscal_unlock)
   if(t.id==='impxlsfile'){if(t.files&&t.files[0])impExcel(t.files[0]);return}
   if(t.id==='impscanfile'){if(t.files&&t.files.length)impScan(t.files);return}
@@ -1668,12 +1688,14 @@ function viewLogin(){
       <div class="small" style="margin-top:6px">Dërguam një link konfirmimi te <b>${esc(S.loginSent)}</b>. Hape emailin dhe shtyp linkun, pastaj hyr me fjalëkalimin tënd. Nëse nuk e gjen, shiko edhe te Spam.</div>
       ${S.loginErr?`<div class="small" style="color:var(--bad);margin-top:6px">${esc(S.loginErr)}</div>`:''}
       ${S.loginMsg?`<div class="small" style="color:var(--good);margin-top:6px">${esc(S.loginMsg)}</div>`:''}
-      <button class="btn" data-act="resend" style="margin-top:10px" ${S.loginBusy?'disabled':''}>Dërgoje përsëri</button></div>
+      <button class="btn" data-act="resend" style="margin-top:10px" ${S.loginBusy?'disabled':''}>Dërgoje përsëri</button>
+      <div class="small muted" style="margin-top:10px">Llogaria është krijuar; mbetet vetëm konfirmimi. Nëse emaili më lart është shkruar gabim, <button style="${link}" data-act="login-mode" data-mode="signup">ndryshoje</button>.</div></div>
       <div style="text-align:center"><button style="${link}" data-act="login-mode" data-mode="login">Kthehu te hyrja</button></div>`
     :`<div class="card">
       <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
       <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="${up?'new-password':'current-password'}"></div>
       ${up?`<div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>`:''}
+      <label class="check small" style="margin-top:2px"><input type="checkbox" id="l-show"><span>Shfaq fjalëkalimin</span></label>
       ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
       ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`:''}
       <button class="btn primary" data-act="${up?'signup':'login'}" ${S.loginBusy?'disabled':''}>${up?(S.loginBusy?'Po krijohet…':'Krijo llogari'):(S.loginBusy?'Po hyn…':'Hyr')}</button></div>
@@ -1683,6 +1705,11 @@ function viewLogin(){
     </div>`;
 }
 function loginMode(m){S.loginMode=m;S.loginErr='';S.loginMsg='';S.loginSent='';const el=$('#l-mail');if(el)S.loginMail=el.value.trim();render()}
+const MAIL_FIX={'iclud.com':'icloud.com','icoud.com':'icloud.com','icloud.co':'icloud.com','icloud.con':'icloud.com','iclould.com':'icloud.com','icluod.com':'icloud.com',
+  'gmial.com':'gmail.com','gmai.com':'gmail.com','gmal.com':'gmail.com','gmail.co':'gmail.com','gmail.con':'gmail.com','gmail.cm':'gmail.com','gamil.com':'gmail.com','gnail.com':'gmail.com',
+  'hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','hotmai.com':'hotmail.com','hotmail.co':'hotmail.com','hotmail.con':'hotmail.com',
+  'yaho.com':'yahoo.com','yahooo.com':'yahoo.com','yahoo.co':'yahoo.com','yahoo.con':'yahoo.com','outlok.com':'outlook.com','outloo.com':'outlook.com','outlook.co':'outlook.com'};
+function mailTypo(email){const i=email.lastIndexOf('@'),d=email.slice(i+1).toLowerCase();return MAIL_FIX[d]?email.slice(0,i+1)+MAIL_FIX[d]:''}
 function authRedirect(){return location.origin+location.pathname}
 async function doLogin(){
   if(!SB||S.loginBusy)return;
@@ -1693,7 +1720,9 @@ async function doLogin(){
   S.loginBusy=false;
   if(error){
     if(/not confirmed/i.test(error.message)){S.loginSent=email;S.loginErr='Emaili nuk është konfirmuar ende.';render();return}
-    S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.':'Hyrja dështoi. Provo përsëri.';render();return}
+    S.loginFails=(S.loginFails||0)+1;
+    S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.'+(S.loginFails>=2?' Shtyp “Shfaq fjalëkalimin” për ta parë çfarë po shkruan, ose rivendose te “Harrova fjalëkalimin”.':''):'Hyrja dështoi. Kontrollo internetin dhe provo përsëri.';render();return}
+  S.loginFails=0;
   startSupabase();
 }
 async function doSignup(){
@@ -1702,6 +1731,8 @@ async function doSignup(){
   S.loginMail=email;S.loginMsg='';
   const fail=m=>{S.loginErr=m;render()};
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return fail('Shkruaj një email të saktë.');
+  // Gabimet e zakonshme te emri i postës (p.sh. iclud.com): pyet një herë; nëse e dërgon përsëri të njëjtin, vazhdon.
+  {const fix=mailTypo(email);if(fix&&S.mailAsked!==email){S.mailAsked=email;return fail('Mos deshe të shkruash '+fix+'? Kontrollo emailin; linku i konfirmimit shkon aty. Nëse është i saktë, shtyp përsëri “Krijo llogari”.')}}
   if(password.length<8)return fail('Fjalëkalimi duhet të ketë të paktën 8 shkronja ose numra.');
   if(password!==p2)return fail('Fjalëkalimet nuk përputhen.');
   S.loginBusy=true;S.loginErr='';render();
