@@ -78,6 +78,10 @@ h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;c
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
 @media (max-width:420px){.grid2{grid-template-columns:1fr}}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pw{position:relative;display:flex}.pw input{flex:1;min-width:0;padding-right:48px}
+.eye{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:40px;border:0;background:none;color:var(--muted,#6b7c82);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.eye:focus-visible{outline:2px solid var(--accent)}.eye[aria-pressed=true]{color:var(--accent)}
+.field.err input{border-color:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 18%,transparent)}.field .ferr{color:var(--bad);font-size:13px;font-weight:600}
 .field.wide{grid-column:1/-1}
 .field label{font-size:12px;color:var(--muted)}
 input,select{font:400 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
@@ -239,9 +243,14 @@ function saveSettings(){
 // Numri i telefonit në një formë të vetme: 00355… dhe 06… bëhen +355…; çdo gjë tjetër mbetet siç është shkruar.
 function normPhone(x){
   const t=String(x||'').trim();if(!t)return '';let d=t.replace(/[\s().\-\/]/g,'');
-  if(/^00\d{8,}$/.test(d))d='+'+d.slice(2);else if(/^355\d{8,9}$/.test(d))d='+'+d;else if(/^0[4-6]\d{7,8}$/.test(d))d='+355'+d.slice(1);
+  if(/^(\+|00|0)?3550?\d{8,9}$/.test(d))d='+355'+d.replace(/^(\+|00|0)?355/,'').replace(/^0/,''); // +355…, 00355…, 0355…, 355…
+  else if(/^00\d{8,}$/.test(d))d='+'+d.slice(2);                                              // prefiks i një shteti tjetër me 00
+  else if(/^0[4-6]\d{7,8}$/.test(d))d='+355'+d.slice(1);                                       // 06X… pa prefiks
+  else if(/^6[6-9]\d{7}$/.test(d))d='+355'+d;                                                  // 6X… pa prefiks dhe pa zero
   return /^\+\d{8,15}$/.test(d)?d:t;
 }
+// Numër i pranueshëm: bosh, ose një numër që u kthye në formën +…; përndryshe fusha del me të kuqe.
+const phoneOk=x=>!String(x||'').trim()||/^\+\d{8,15}$/.test(normPhone(x));
 const typing=()=>{const a=document.activeElement;return !!a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)};
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',4000)}
 
@@ -712,8 +721,8 @@ function viewCompany(){
     <div class="field"><label for="co-new-name">Emri i kompanisë</label><input id="co-new-name" type="text" autocomplete="organization" placeholder="p.sh. AUTO SHPK"></div>
     <div class="field"><label for="co-new-nipt">NIPT</label><input id="co-new-nipt" type="text" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="L12345678A" style="text-transform:uppercase"></div>
     <div class="field wide"><label for="co-new-address">Adresa</label><input id="co-new-address" type="text" autocomplete="street-address" placeholder="Rruga, qyteti"></div>
-    <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="+355 6X XXX XXXX ose 06X XXX XXXX"></div></div>
-    ${S.coErr?`<div class="small" role="alert" style="color:var(--bad);font-weight:600;margin-top:10px">${esc(S.coErr)}</div>`:''}
+    <div class="field wide"><label for="co-new-phone">Telefoni (jo i detyrueshëm)</label><input id="co-new-phone" type="tel" autocomplete="tel" placeholder="+355 6X XXX XXXX ose 06X XXX XXXX" inputmode="tel"></div></div>
+    <div class="small" id="co-err" role="alert" style="color:var(--bad);font-weight:600;margin-top:10px" hidden></div><div class="small" id="co-ok" role="status" style="color:var(--good);font-weight:600;margin-top:10px" hidden></div>
     <div class="row end"><button class="btn primary" data-act="coadd" ${S.coBusy?'disabled':''}>${S.coBusy?'Po ruhet…':'Ruaj dhe hap programin'}</button></div></div>`;
   const own=ownCompanies(),price=n=>fmt(n,0)+' L';
   const f=(c,k,label,ph)=>`<div class="field${k==='address'||k==='slogan'?' wide':''}"><label for="co-${esc(c.key)}-${k}">${label}</label><input id="co-${esc(c.key)}-${k}" data-co="${esc(c.key)}" data-k="${k}" type="text" value="${esc(c[k])}" placeholder="${ph||''}" autocomplete="off"></div>`;
@@ -759,9 +768,9 @@ function viewCompany(){
   ${SB?`<div class="card"><h3>Fjalëkalimi</h3>
     ${S.userMail?`<div class="small muted">Llogaria: ${esc(S.userMail)}</div>`:''}
     <div class="grid2">
-    <div class="field wide"><label for="pw-old">Fjalëkalimi i tanishëm</label><input id="pw-old" type="password" autocomplete="current-password"></div>
-    <div class="field"><label for="pw-new">Fjalëkalimi i ri</label><input id="pw-new" type="password" autocomplete="new-password"></div>
-    <div class="field"><label for="pw-new2">Përsërit fjalëkalimin e ri</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div>
+    <div class="field wide"><label for="pw-old">Fjalëkalimi i tanishëm</label><div class="pw"><input id="pw-old" type="password" autocomplete="current-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>
+    <div class="field"><label for="pw-new">Fjalëkalimi i ri</label><div class="pw"><input id="pw-new" type="password" autocomplete="new-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>
+    <div class="field"><label for="pw-new2">Përsërit fjalëkalimin e ri</label><div class="pw"><input id="pw-new2" type="password" autocomplete="new-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div></div>
     ${S.pwErr?`<div class="small" style="color:var(--bad)">${esc(S.pwErr)}</div>`:''}
     ${S.pwMsg?`<div class="small" style="color:var(--good)">${esc(S.pwMsg)}</div>`:''}
     <div class="row end"><button class="btn primary" data-act="pwchange" ${S.pwBusy?'disabled':''}>${S.pwBusy?'Po ruhet…':'Ndrysho fjalëkalimin'}</button></div></div>`:''}`;
@@ -1247,6 +1256,7 @@ document.addEventListener('click',e=>{
   if(act==='resend'){doResend();return}
   if(act==='forgot'){doForgot();return}
   if(act==='newpass'){doNewPass();return}
+  if(act==='eye'){const i=b.parentElement.querySelector('input'),on=i.type==='password';i.type=on?'text':'password';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Fshih fjalëkalimin':'Shfaq fjalëkalimin');b.innerHTML=on?EYE_ON:EYE_OFF;i.focus();return}
   if(act==='login-mode'){loginMode(b.dataset.mode);return}
   if(act==='logout'){doLogout();return}
   if(act==='install'){doInstall();return}
@@ -1335,20 +1345,29 @@ document.addEventListener('click',e=>{
     const name=$('#co-new-name').value.trim(),nipt=$('#co-new-nipt').value.trim().toUpperCase();
     const adr=$('#co-new-address'),tel=$('#co-new-phone'),address=adr?adr.value.trim():'',phone=tel?normPhone(tel.value):'';
     if(S.coBusy)return;
-    // Gabimi del me shkrim poshtë fushave (jo vetëm si njoftim që zhduket), dhe fushat e plotësuara nuk preken.
-    const bad=(m,id)=>{S.coErr=m;toast(m);const e=document.querySelector('[role=alert]');if(S.onboard&&!e){const vals=['name','nipt','address','phone'].map(x=>($('#co-new-'+x)||{}).value);render();['name','nipt','address','phone'].forEach((x,i)=>{const el=$('#co-new-'+x);if(el&&vals[i]!=null)el.value=vals[i]})}else if(e)e.textContent=m;const f=$('#'+id);if(f)f.focus()};
+    // Gabimi del me të kuqe te vetë fusha e gabuar dhe mbetet aty; fushat e tjera nuk preken.
+    const clear=()=>{document.querySelectorAll('.field.err').forEach(f=>f.classList.remove('err'));document.querySelectorAll('.ferr').forEach(f=>f.remove());const e=$('#co-err');if(e){e.hidden=true;e.textContent=''}};
+    const bad=(m,id)=>{clear();S.coErr=m;const f=$('#'+id);
+      if(f){const box=f.closest('.field');box.classList.add('err');box.insertAdjacentHTML('beforeend','<div class="ferr" role="alert">'+esc(m)+'</div>');f.focus();f.scrollIntoView({block:'center'})}
+      else{const e=$('#co-err');if(e){e.textContent=m;e.hidden=false}else toast(m)}};
+    clear();
     if(!name)return bad('Shkruaj emrin e kompanisë.','co-new-name');
     if(!nipt)return bad('Shkruaj NIPT-in e kompanisë.','co-new-nipt');
-    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt))return bad('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A).','co-new-nipt');
+    if(!/^[A-Z]\d{8}[A-Z]$/.test(nipt))return bad('NIPT-i ka 10 karaktere: shkronjë, 8 shifra, shkronjë (p.sh. L12345678A). Ky ka '+nipt.length+'.','co-new-nipt');
     if(adr&&!address)return bad('Shkruaj adresën e kompanisë.','co-new-address');
+    if(tel&&!phoneOk(tel.value))return bad('Numri i telefonit nuk duket i saktë. Shkruaje p.sh. +355 68 123 4567, 0355 68 123 4567 ose 068 123 4567. Mund ta lësh edhe bosh.','co-new-phone');
+    if(tel)tel.value=phone;
     const k=sellerKey({importer_nipt:nipt});S.settings.sellers=S.settings.sellers||{};
     if(ownKeys().length){toast('Kompania është vendosur tashmë.');return}
     S.settings.sellers[k]=Object.assign({name,nipt},address?{address}:{},phone?{phone}:{});S.settings.company=k;S.coErr='';
     if(!S.onboard){saveSettings();render();return}
     // Hapi i parë: programi hapet vetëm pasi të dhënat janë ruajtur vërtet në server; përndryshe forma do të dilte përsëri herën tjetër.
     S.coBusy=true;const btn=b;btn.disabled=true;btn.textContent='Po ruhet…';
-    saveSettings().then(()=>{S.coBusy=false;S.onboard=false;S.view='list';render();scrollTo(0,0);toast('Të dhënat u ruajtën. Mirë se erdhe!')})
-      .catch(()=>{S.coBusy=false;delete S.settings.sellers[k];S.settings.company='';btn.disabled=false;btn.textContent='Ruaj dhe hap programin';bad('Të dhënat nuk u ruajtën. Kontrollo internetin dhe shtyp përsëri “Ruaj dhe hap programin”.','co-new-name')});
+    saveSettings().then(()=>{
+        // Përgjigjja me të gjelbër mbetet një çast në ekran para se të hapet programi, që të shihet se u pranua.
+        const ok=$('#co-ok');if(ok){ok.textContent='✓ U ruajt. Të dhënat e kompanisë u pranuan; po hapet programi…';ok.hidden=false}btn.textContent='U ruajt ✓';
+        setTimeout(()=>{S.coBusy=false;S.onboard=false;S.coErr='';S.view='list';render();scrollTo(0,0);toast('✓ Kompania u regjistrua. Mirë se erdhe!')},1100)})
+      .catch(()=>{S.coBusy=false;delete S.settings.sellers[k];S.settings.company='';btn.disabled=false;btn.textContent='Ruaj dhe hap programin';bad('Të dhënat nuk u ruajtën. Kontrollo internetin dhe shtyp përsëri “Ruaj dhe hap programin”.','')});
     return;
   }
   if(act==='qclear'){S.q='';const q=$('#q');q.value='';b.hidden=true;updateList();q.focus();return}
@@ -1505,7 +1524,6 @@ document.addEventListener('change',e=>{
   if(t.dataset.cs){const v=S.vehicles.find(x=>x.id===S.id);if(v)save(v);return}
   if(t.dataset.rep){S.rep[t.dataset.rep]=t.value;if(!S.rep.year)S.rep.month='';updateList();return}
   if(t.id==='scanfile'){const f=t.files;if(f&&f.length)runScan(f);return}
-  if(t.id==='l-show'){document.querySelectorAll('#l-pass,#l-pass2').forEach(x=>x.type=t.checked?'text':'password');return}
   if(t.id==='fisc-on'){if(t.checked){t.checked=false;return}S.settings.fiscal_on=false;S.unlockErr='';saveSettings();render();return} // kutia vetëm e fik; ndezja bëhet me kod (fiscal_unlock)
   if(t.id==='impxlsfile'){if(t.files&&t.files[0])impExcel(t.files[0]);return}
   if(t.id==='impscanfile'){if(t.files&&t.files.length)impScan(t.files);return}
@@ -1663,8 +1681,8 @@ function viewLogin(){
     <div class="logo-wrap"><img src="logo.png" width="560" height="579" alt="TUFA AutoSales ERP"></div>
     <div class="brand"><span>Vendos fjalëkalimin e ri</span></div>
     <div class="card">
-      <div class="field"><label for="l-pass">Fjalëkalimi i ri</label><input id="l-pass" type="password" autocomplete="new-password"></div>
-      <div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="l-pass">Fjalëkalimi i ri</label><div class="pw"><input id="l-pass" type="password" autocomplete="new-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>
+      <div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><div class="pw"><input id="l-pass2" type="password" autocomplete="new-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>
       ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
       <button class="btn primary" data-act="newpass" ${S.loginBusy?'disabled':''}>${S.loginBusy?'Po ruhet…':'Ruaj dhe hyr'}</button></div></div>`;
   if(S.loginMode==='forgot'){
@@ -1693,9 +1711,8 @@ function viewLogin(){
       <div style="text-align:center"><button style="${link}" data-act="login-mode" data-mode="login">Kthehu te hyrja</button></div>`
     :`<div class="card">
       <div class="field"><label for="l-mail">Email</label><input id="l-mail" type="email" autocomplete="username" value="${esc(S.loginMail||'')}"></div>
-      <div class="field"><label for="l-pass">Fjalëkalimi</label><input id="l-pass" type="password" autocomplete="${up?'new-password':'current-password'}"></div>
-      ${up?`<div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><input id="l-pass2" type="password" autocomplete="new-password"></div>`:''}
-      <label class="check small" style="margin-top:2px"><input type="checkbox" id="l-show"><span>Shfaq fjalëkalimin</span></label>
+      <div class="field"><label for="l-pass">Fjalëkalimi</label><div class="pw"><input id="l-pass" type="password" autocomplete="${up?'new-password':'current-password'}"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>
+      ${up?`<div class="field"><label for="l-pass2">Përsërit fjalëkalimin</label><div class="pw"><input id="l-pass2" type="password" autocomplete="new-password"><button type="button" class="eye" data-act="eye" aria-label="Shfaq fjalëkalimin" aria-pressed="false">${EYE}</button></div></div>`:''}
       ${S.loginErr?`<div class="small" style="color:var(--bad)">${esc(S.loginErr)}</div>`:''}
       ${S.loginMsg?`<div class="small" style="color:var(--good)">${esc(S.loginMsg)}</div>`:''}
       <button class="btn primary" data-act="${up?'signup':'login'}" ${S.loginBusy?'disabled':''}>${up?(S.loginBusy?'Po krijohet…':'Krijo llogari'):(S.loginBusy?'Po hyn…':'Hyr')}</button></div>
@@ -1705,6 +1722,10 @@ function viewLogin(){
     </div>`;
 }
 function loginMode(m){S.loginMode=m;S.loginErr='';S.loginMsg='';S.loginSent='';const el=$('#l-mail');if(el)S.loginMail=el.value.trim();render()}
+// Syri te fushat e fjalëkalimit: i hapur = fjalëkalimi duket.
+const EYE_ON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.5 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.3-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const EYE=EYE_OFF;
 const MAIL_FIX={'iclud.com':'icloud.com','icoud.com':'icloud.com','icloud.co':'icloud.com','icloud.con':'icloud.com','iclould.com':'icloud.com','icluod.com':'icloud.com',
   'gmial.com':'gmail.com','gmai.com':'gmail.com','gmal.com':'gmail.com','gmail.co':'gmail.com','gmail.con':'gmail.com','gmail.cm':'gmail.com','gamil.com':'gmail.com','gnail.com':'gmail.com',
   'hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','hotmai.com':'hotmail.com','hotmail.co':'hotmail.com','hotmail.con':'hotmail.com',
@@ -1721,7 +1742,7 @@ async function doLogin(){
   if(error){
     if(/not confirmed/i.test(error.message)){S.loginSent=email;S.loginErr='Emaili nuk është konfirmuar ende.';render();return}
     S.loginFails=(S.loginFails||0)+1;
-    S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.'+(S.loginFails>=2?' Shtyp “Shfaq fjalëkalimin” për ta parë çfarë po shkruan, ose rivendose te “Harrova fjalëkalimin”.':''):'Hyrja dështoi. Kontrollo internetin dhe provo përsëri.';render();return}
+    S.loginErr=/invalid/i.test(error.message)?'Emaili ose fjalëkalimi nuk është i saktë.'+(S.loginFails>=2?' Shtyp syrin te fusha për ta parë çfarë po shkruan, ose rivendose te “Harrova fjalëkalimin”.':''):'Hyrja dështoi. Kontrollo internetin dhe provo përsëri.';render();return}
   S.loginFails=0;
   startSupabase();
 }
